@@ -1,0 +1,6 @@
+*.xcodeproj
+build
+Source/pdex.bin
+Source/pdex.elf
+Source/pdex.dylib
+*.pdx
