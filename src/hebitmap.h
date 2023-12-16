@@ -18,8 +18,8 @@ typedef struct HEBitmap {
 
 void HEBitmapSetPlaydateAPI(PlaydateAPI *pd);
 
-HEBitmap* HEBitmapNew(LCDBitmap *lcd_bitmap);
-void HEBitmapDraw(HEBitmap *bitmap, int x, int y);
+HEBitmap* HEBitmapNew(LCDBitmap const *lcd_bitmap);
+void HEBitmapDraw(HEBitmap const *bitmap, int x, int y);
 void HEBitmapFree(HEBitmap *bitmap);
 
 #endif /* hebitmap_h */

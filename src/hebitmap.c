@@ -20,8 +20,8 @@ typedef struct {
     int rowbytes;
 } _HEBitmap;
 
-static void buffer8_align32(uint8_t *dst, uint8_t *src, int dst_cols, int src_cols, int rows, uint32_t fill_value);
-static void adjust_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top);
+static void buffer8_align32(uint8_t *dst, uint8_t const *src, int dst_cols, int src_cols, int rows, uint32_t fill_value);
+static void adjust_bounds(HEBitmap const *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top);
 static inline uint32_t bswap32(uint32_t n);
 
 void HEBitmapSetPlaydateAPI(PlaydateAPI *pd)
@@ -29,7 +29,7 @@ void HEBitmapSetPlaydateAPI(PlaydateAPI *pd)
     playdate = pd;
 }
 
-HEBitmap* HEBitmapNew(LCDBitmap *lcd_bitmap)
+HEBitmap* HEBitmapNew(LCDBitmap const *lcd_bitmap)
 {
     HEBitmap *bitmap = playdate->system->realloc(NULL, sizeof(HEBitmap));
     
@@ -37,7 +37,7 @@ HEBitmap* HEBitmapNew(LCDBitmap *lcd_bitmap)
     bitmap->prv = prv;
     
     int width, height, rowbytes;
-    uint8_t *mask, *data;
+    uint8_t const *mask, *data;
     playdate->graphics->getBitmapData(lcd_bitmap, &width, &height, &rowbytes, &mask, &data);
     
     bitmap->width = width;
@@ -64,10 +64,10 @@ HEBitmap* HEBitmapNew(LCDBitmap *lcd_bitmap)
 }
 
 #ifdef HEBITMAP_MASK
-void HEBitmapDrawMask(HEBitmap *bitmap, int x, int y)
+void HEBitmapDrawMask(HEBitmap const *bitmap, int x, int y)
 {
 #else
-void HEBitmapDrawOpaque(HEBitmap *bitmap, int x, int y)
+void HEBitmapDrawOpaque(HEBitmap const *bitmap, int x, int y)
 {
 #endif
     if(x >= LCD_COLUMNS || (x + bitmap->width) <= 0 || y >= LCD_ROWS || (y + bitmap->height) <= 0)
@@ -78,7 +78,7 @@ void HEBitmapDrawOpaque(HEBitmap *bitmap, int x, int y)
     unsigned int x1, y1, x2, y2, offset_left, offset_top;
     adjust_bounds(bitmap, x, y, &x1, &y1, &x2, &y2, &offset_left, &offset_top);
     
-    _HEBitmap *prv = bitmap->prv;
+    _HEBitmap const *prv = bitmap->prv;
 
     uint8_t *frame_start = playdate->graphics->getFrame() + y1 * LCD_ROWSIZE + (x1 / 32) * 4;
     
@@ -92,16 +92,16 @@ void HEBitmapDrawOpaque(HEBitmap *bitmap, int x, int y)
 #endif
         int data_offset = offset_top * prv->rowbytes;
 
-        uint8_t *data_start = prv->data + data_offset;
+        uint8_t const *restrict data_start = prv->data + data_offset;
 #ifdef HEBITMAP_MASK
-        uint8_t *mask_start = prv->mask + data_offset;
+        uint8_t const *restrict mask_start = prv->mask + data_offset;
 #endif
-        for(int row = y1; row < y2; row++)
+        for(int row = y1; row < (int)y2; row++)
         {
             uint32_t *frame_ptr = (uint32_t*)frame_start;
-            uint32_t *data_ptr = (uint32_t*)data_start;
+            uint32_t const *restrict data_ptr = (uint32_t*)data_start;
 #ifdef HEBITMAP_MASK
-            uint32_t *mask_ptr = (uint32_t*)mask_start;
+            uint32_t const *restrict mask_ptr = (uint32_t*)mask_start;
 #endif
             uint32_t data_left = bswap32(*frame_ptr);
 #ifdef HEBITMAP_MASK
@@ -169,16 +169,16 @@ void HEBitmapDrawOpaque(HEBitmap *bitmap, int x, int y)
         uint32_t shift_mask = (shift > 0) ? (0xFFFFFFFF << shift) : 0xFFFFFFFF;
         int data_offset = offset_top * prv->rowbytes + offset_left / 32 * 4;
                 
-        uint8_t *data_start = prv->data + data_offset;
+        uint8_t const *restrict data_start = prv->data + data_offset;
 #ifdef HEBITMAP_MASK
-        uint8_t *mask_start = prv->mask + data_offset;
+        uint8_t const *restrict mask_start = prv->mask + data_offset;
 #endif
-        for(int row = y1; row < y2; row++)
+        for(int row = y1; row < (int)y2; row++)
         {
             uint32_t *frame_ptr = (uint32_t*)frame_start;
-            uint32_t *data_ptr = (uint32_t*)data_start;
+            uint32_t const *restrict data_ptr = (uint32_t*)data_start;
 #ifdef HEBITMAP_MASK
-            uint32_t *mask_ptr = (uint32_t*)mask_start;
+            uint32_t const *restrict mask_ptr = (uint32_t*)mask_start;
 #endif
             uint32_t data_left = *data_ptr << shift;
 #ifdef HEBITMAP_MASK
@@ -227,7 +227,7 @@ void HEBitmapDrawOpaque(HEBitmap *bitmap, int x, int y)
     playdate->graphics->markUpdatedRows(y1, y2 - 1);
 }
 
-void HEBitmapDraw(HEBitmap *bitmap, int x, int y)
+void HEBitmapDraw(HEBitmap const *bitmap, int x, int y)
 {
     if(((_HEBitmap*)bitmap->prv)->mask)
     {
@@ -256,9 +256,9 @@ void HEBitmapFree(HEBitmap *bitmap)
     playdate->system->realloc(bitmap, 0);
 }
 
-static void buffer8_align32(uint8_t *dst, uint8_t *src, int dst_cols, int src_cols, int rows, uint32_t fill_value)
+static void buffer8_align32(uint8_t *dst, uint8_t const *src, int dst_cols, int src_cols, int rows, uint32_t fill_value)
 {
-    uint8_t *src_start = src;
+    uint8_t const *src_start = src;
     uint8_t *dst_start = dst;
 
     int src_offset = 0;
@@ -269,7 +269,7 @@ static void buffer8_align32(uint8_t *dst, uint8_t *src, int dst_cols, int src_co
 
     for(int row = 0; row < rows; row++)
     {
-        uint32_t *src_ptr = (uint32_t*)(src_start + src_offset);
+        uint32_t const *src_ptr = (uint32_t const*)(src_start + src_offset);
         uint32_t *dst_ptr = (uint32_t*)(dst_start + dst_offset);
         uint32_t *dst_end = (uint32_t*)(dst_start + dst_offset + aligned_cols);
         
@@ -284,7 +284,7 @@ static void buffer8_align32(uint8_t *dst, uint8_t *src, int dst_cols, int src_co
         
         if(unaligned_cols > 0)
         {
-            uint8_t *u_ptr = src_start + src_offset + aligned_cols;
+            uint8_t const *u_ptr = src_start + src_offset + aligned_cols;
             uint32_t value32 = fill_value;
             
             switch(unaligned_cols)
@@ -309,7 +309,7 @@ static void buffer8_align32(uint8_t *dst, uint8_t *src, int dst_cols, int src_co
 }
 
     
-void adjust_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top)
+void adjust_bounds(HEBitmap const *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top)
 {
     
     *offset_left = 0;
