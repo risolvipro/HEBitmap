@@ -11,7 +11,7 @@
 #include "pd_api.h"
 #include "hebitmap.h"
 
-#define ENTITY_COUNT 1000
+#define ENTITY_COUNT 5000
 
 typedef struct {
     float x;
