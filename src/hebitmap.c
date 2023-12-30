@@ -7,10 +7,11 @@
 
 #include "hebitmap.h"
 
+#define HEBITMAP_MASK
+#define HEBITMAP_CROP
+
 #define HE_MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define HE_MIN(x, y) (((x) < (y)) ? (x) : (y))
-
-#define HEBITMAP_MASK
 
 static PlaydateAPI *playdate;
 
@@ -18,9 +19,14 @@ typedef struct {
     uint8_t *data;
     uint8_t *mask;
     int rowbytes;
+    int bx;
+    int by;
+    int bw;
+    int bh;
 } _HEBitmap;
 
-static void buffer8_align32(uint8_t *dst, uint8_t *src, int dst_cols, int src_cols, int rows, uint32_t fill_value);
+static void buffer8_align32(uint8_t *dst, uint8_t *src, int dst_cols, int src_cols, int x, int y, int width, int height, uint8_t fill_value);
+static void get_bounds(uint8_t *data, uint8_t *mask, int rowbytes, int width, int height, int *bx, int *by, int *bw, int *bh);
 static void adjust_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top);
 static inline uint32_t bswap32(uint32_t n);
 
@@ -40,37 +46,49 @@ HEBitmap* HEBitmapNew(LCDBitmap *lcd_bitmap)
     uint8_t *mask, *data;
     playdate->graphics->getBitmapData(lcd_bitmap, &width, &height, &rowbytes, &mask, &data);
     
+    int bx, by, bw, bh;
+    get_bounds(data, mask, rowbytes, width, height, &bx, &by, &bw, &bh);
+    
+    prv->bx = bx;
+    prv->by = by;
+    prv->bw = bw;
+    prv->bh = bh;
+
     bitmap->width = width;
     bitmap->height = height;
     
-    int rowbytes_aligned = ((rowbytes * 8 + 31) / 32) * 4;
+    int rowbytes_aligned = ((bw + 31) / 32) * 4;
     
     prv->rowbytes = rowbytes_aligned;
     
     size_t data_size = rowbytes_aligned * height;
 
     prv->data = playdate->system->realloc(NULL, data_size);
-    buffer8_align32(prv->data, data, rowbytes_aligned, rowbytes, height, 0x00000000);
+    buffer8_align32(prv->data, data, rowbytes_aligned, rowbytes, bx, by, bw, bh, 0x00);
 
     prv->mask = NULL;
     
     if(mask)
     {
         prv->mask = playdate->system->realloc(NULL, data_size);
-        buffer8_align32(prv->mask, mask, rowbytes_aligned, rowbytes, height, 0x00000000);
+        buffer8_align32(prv->mask, mask, rowbytes_aligned, rowbytes, bx, by, bw, bh, 0x00);
     }
     
     return bitmap;
 }
 
 #ifdef HEBITMAP_MASK
-void HEBitmapDrawMask(HEBitmap *bitmap, int x, int y)
-{
+static void HEBitmapDrawMask(HEBitmap *bitmap, int x, int y)
 #else
-void HEBitmapDrawOpaque(HEBitmap *bitmap, int x, int y)
-{
+static void HEBitmapDrawOpaque(HEBitmap *bitmap, int x, int y)
 #endif
-    if(x >= LCD_COLUMNS || (x + bitmap->width) <= 0 || y >= LCD_ROWS || (y + bitmap->height) <= 0)
+{
+    _HEBitmap *prv = bitmap->prv;
+    
+    x += prv->bx;
+    y += prv->by;
+    
+    if(x >= LCD_COLUMNS || (x + prv->bw) <= 0 || y >= LCD_ROWS || (y + prv->bh) <= 0)
     {
         return;
     }
@@ -78,8 +96,6 @@ void HEBitmapDrawOpaque(HEBitmap *bitmap, int x, int y)
     unsigned int x1, y1, x2, y2, offset_left, offset_top;
     adjust_bounds(bitmap, x, y, &x1, &y1, &x2, &y2, &offset_left, &offset_top);
     
-    _HEBitmap *prv = bitmap->prv;
-
     uint8_t *frame_start = playdate->graphics->getFrame() + y1 * LCD_ROWSIZE + (x1 / 32) * 4;
     
     if(x >= 0)
@@ -256,86 +272,122 @@ void HEBitmapFree(HEBitmap *bitmap)
     playdate->system->realloc(bitmap, 0);
 }
 
-static void buffer8_align32(uint8_t *dst, uint8_t *src, int dst_cols, int src_cols, int rows, uint32_t fill_value)
+static void get_bounds(uint8_t *data, uint8_t *mask, int rowbytes, int width, int height, int *bx, int *by, int *bw, int *bh)
 {
-    uint8_t *src_start = src;
-    uint8_t *dst_start = dst;
+    int min_y = 0; int min_x = 0; int max_x = width; int max_y = height;
 
-    int src_offset = 0;
-    int dst_offset = 0;
-    
-    int unaligned_cols = src_cols % 4;
-    int aligned_cols = src_cols - unaligned_cols;
-
-    for(int row = 0; row < rows; row++)
+#ifdef HEBITMAP_CROP
+    if(mask)
     {
-        uint32_t *src_ptr = (uint32_t*)(src_start + src_offset);
-        uint32_t *dst_ptr = (uint32_t*)(dst_start + dst_offset);
-        uint32_t *dst_end = (uint32_t*)(dst_start + dst_offset + aligned_cols);
+        int min_set = 0;
+
+        max_x = 0;
+        max_y = 0;
         
-        // Copy 32-bit aligned data
-        
-        while(dst_ptr < dst_end)
+        for(int y = 0; y < height; y++)
         {
-            *dst_ptr++ = bswap32(*src_ptr++);
-        }
-        
-        // Copy unaligned data
-        
-        if(unaligned_cols > 0)
-        {
-            uint8_t *u_ptr = src_start + src_offset + aligned_cols;
-            uint32_t value32 = fill_value;
-            
-            switch(unaligned_cols)
+            for(int x = 0; x < width; x++)
             {
-                case 1:
-                    value32 = u_ptr[0] << 24 | fill_value << 16 | fill_value << 8 | fill_value;
-                    break;
-                case 2:
-                    value32 = u_ptr[0] << 24 | u_ptr[1] << 16 | fill_value << 8 | fill_value;
-                    break;
-                case 3:
-                    value32 = u_ptr[0] << 24 | u_ptr[1] << 16 | u_ptr[2] << 8 | fill_value;
-                    break;
+                uint8_t bitmask = 1 << (7 - (unsigned int)x % 8);
+                if((mask[y * rowbytes + (unsigned int)x / 8] & bitmask))
+                {
+                    if(!min_set)
+                    {
+                        min_x = x;
+                        min_y = y;
+                        min_set = 1;
+                    }
+                    
+                    min_y = HE_MIN(min_y, y);
+                    max_y = HE_MAX(max_y, y + 1);
+                    
+                    min_x = HE_MIN(min_x, x);
+                    max_x = HE_MAX(max_x, x + 1);
+                }
+            }
+        }
+    }
+#endif
+    
+    *bx = min_x; *by = min_y; *bw = max_x - min_x; *bh = max_y - min_y;
+}
+    
+static void buffer8_align32(uint8_t *dst, uint8_t *src, int dst_rowbytes, int src_rowbytes, int x, int y, int width, int height, uint8_t fill_value)
+{
+    int src_offset = y * src_rowbytes;
+    int dst_offset = 0;
+    int aligned_width = dst_rowbytes * 8;
+    
+    for(int dst_y = 0; dst_y < height; dst_y++)
+    {
+        uint32_t *dst_ptr32 = (uint32_t*)(dst + dst_offset);
+        int byte = 0;
+        
+        for(int dst_x = 0; dst_x < aligned_width; dst_x++)
+        {
+            uint8_t value = fill_value;
+            if(dst_x < width)
+            {
+                int src_x = x + dst_x;
+                uint8_t src_bitmask = 1 << (7 - (unsigned int)src_x % 8);
+                value = (src[src_offset + (unsigned int)src_x / 8] & src_bitmask);
             }
             
-            *dst_end = value32;
+            uint8_t dst_bitmask = 1 << (7 - (unsigned int)dst_x % 8);
+            uint8_t *dst_ptr = dst + dst_offset + (unsigned int)dst_x / 8;
+            
+            if(value)
+            {
+                *dst_ptr |= dst_bitmask;
+            }
+            else
+            {
+                *dst_ptr &= ~dst_bitmask;
+            }
+            
+            byte++;
+            if(byte == 32)
+            {
+                *dst_ptr32 = bswap32(*dst_ptr32);
+                dst_ptr32++;
+                byte = 0;
+            }
         }
         
-        src_offset += src_cols;
-        dst_offset += dst_cols;
+        src_offset += src_rowbytes;
+        dst_offset += dst_rowbytes;
     }
 }
-
     
-void adjust_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top)
+static void adjust_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top)
 {
+    _HEBitmap *prv = bitmap->prv;
     
     *offset_left = 0;
     *offset_top = 0;
     
-    if(x > 0)
+    if(x >= 0)
     {
         *x1 = x;
-        
     }
-    else {
+    else
+    {
         *x1 = 0;
         *offset_left = -x;
     }
     
-    if(y > 0)
+    if(y >= 0)
     {
         *y1 = y;
     }
-    else {
+    else
+    {
         *y1 = 0;
         *offset_top = -y;
     }
     
-    *x2 = HE_MIN(*x1 - *offset_left + bitmap->width, LCD_COLUMNS);
-    *y2 = HE_MIN(*y1 - *offset_top + bitmap->height, LCD_ROWS);
+    *x2 = HE_MIN(*x1 - *offset_left + prv->bw, LCD_COLUMNS);
+    *y2 = HE_MIN(*y1 - *offset_top + prv->bh, LCD_ROWS);
 }
 
 static inline uint32_t bswap32(uint32_t n)
