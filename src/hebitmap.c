@@ -61,7 +61,7 @@ HEBitmap* HEBitmapNew(LCDBitmap *lcd_bitmap)
     
     prv->rowbytes = rowbytes_aligned;
     
-    size_t data_size = rowbytes_aligned * height;
+    size_t data_size = rowbytes_aligned * bh;
 
     prv->data = playdate->system->realloc(NULL, data_size);
     buffer8_align32(prv->data, data, rowbytes_aligned, rowbytes, bx, by, bw, bh, 0x00);
