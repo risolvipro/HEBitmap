@@ -16,7 +16,6 @@
 typedef struct {
     uint8_t *data;
     uint8_t *mask;
-    uint8_t *fb;
     int rowbytes;
     int bx;
     int by;
