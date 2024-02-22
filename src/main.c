@@ -32,7 +32,7 @@ static float y_delta = 0;
 static PDMenuItem *debugMenuItem;
 
 static int update(void* userdata);
-static void debugModeCallback(void *userdata);
+static void debugMenuCallback(void *userdata);
 
 #ifdef _WINDLL
 __declspec(dllexport)
@@ -65,7 +65,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
             entities[i] = entity;
         }
         
-        debugMenuItem = playdate->system->addCheckmarkMenuItem("Debug", debug_mode, debugModeCallback, NULL);
+        debugMenuItem = playdate->system->addCheckmarkMenuItem("Debug", debug_mode, debugMenuCallback, NULL);
         
 		// Note: If you set an update callback in the kEventInit handler, the system assumes the game is pure C and doesn't run any Lua code in the game
 		pd->system->setUpdateCallback(update, pd);
@@ -185,7 +185,7 @@ static int update(void *userdata)
 	return 1;
 }
 
-void debugModeCallback(void *userdata)
+static void debugMenuCallback(void *userdata)
 {
     debug_mode = playdate->system->getMenuItemValue(debugMenuItem);
 }

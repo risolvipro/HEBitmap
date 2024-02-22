@@ -20,6 +20,7 @@ void HEBitmapSetPlaydateAPI(PlaydateAPI *pd);
 
 HEBitmap* HEBitmapNew(LCDBitmap *lcd_bitmap);
 void HEBitmapDraw(HEBitmap *bitmap, int x, int y);
+LCDColor HEBitmapColorAt(HEBitmap *bitmap, int x, int y);
 void HEBitmapFree(HEBitmap *bitmap);
 
 #endif /* hebitmap_h */

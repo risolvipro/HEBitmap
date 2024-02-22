@@ -22,7 +22,9 @@ Bitmap info: 48x22 (masked)
 ## Example
 
 ```c
-// Set pointer to Playdate API
+#include "hebitmap.h"
+
+// Set Playdate API pointer
 HEBitmapSetPlaydateAPI(pd);
 
 // Load a LCDBitmap
@@ -31,15 +33,15 @@ LCDBitmap *lcd_bitmap = playdate->graphics->loadBitmap("test", NULL);
 // New HEBitmap from LCDBitmap
 HEBitmap *he_bitmap = HEBitmapNew(lcd_bitmap);
 
-// Draw it
+// Draw
 HEBitmapDraw(he_bitmap, 0, 0);
+
+// Free
+HEBitmapFree(he_bitmap);
+
+// Free original LCDBitmap
+playdate->graphics->freeBitmap(lcd_bitmap);
 ```
-
-## Notes
-
-The library provides the routine for masked bitmaps, you can comment out `#define HEBITMAP_MASK` in the source to generate the function for opaque bitmaps.
-
-If you need both, you can copy-paste the `HEBitmapDrawMask` function and prepend `#undef HEBITMAP_MASK` to generate both functions.
 
 ## Demo
 
