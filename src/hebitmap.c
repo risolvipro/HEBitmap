@@ -84,7 +84,7 @@ LCDColor HEBitmapColorAt(HEBitmap *bitmap, int x, int y)
 {
     _HEBitmap *prv = bitmap->prv;
     
-    if(x >= prv->bx && x <= (prv->bx + prv->bw) && y >= prv->by && y <= (prv->by + prv->bh))
+    if(x >= prv->bx && x < (prv->bx + prv->bw) && y >= prv->by && y < (prv->by + prv->bh))
     {
         int src_x = x - prv->bx;
         int src_y = y - prv->by;
