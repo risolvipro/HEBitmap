@@ -10,8 +10,9 @@
 
 #include "pd_api.h"
 #include "hebitmap.h"
-
+ 
 #define ENTITY_COUNT 1000
+// #define LUA_EXAMPLE
 
 typedef struct {
     float x;
@@ -25,6 +26,7 @@ static HEBitmap *he_bitmap;
 static LCDBitmap *lcd_bitmap;
 static int use_sdk = 0;
 static int debug_mode = 0;
+static int debug_clip = 0;
 static Entity* entities[ENTITY_COUNT];
 static float velocity = 20;
 static float x_delta = 0;
@@ -39,18 +41,23 @@ __declspec(dllexport)
 #endif
 int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 {
-	(void)arg; // arg is currently only used for event = kEventKeyPressed
-
-	if(event == kEventInit)
+    (void)arg; // arg is currently only used for event = kEventKeyPressed
+    
+    if(event == kEventInit)
     {
         playdate = pd;
         
+#ifndef LUA_EXAMPLE
         playdate->display->setRefreshRate(0);
         
-        HEBitmapSetPlaydateAPI(pd);
+        HEBitmapInit(pd, 0);
         
         lcd_bitmap = playdate->graphics->loadBitmap("dvd", NULL);
-        he_bitmap = HEBitmapNew(lcd_bitmap);
+        he_bitmap = HEBitmapLoad("dvd");
+        
+        // he_bitmap = HEBitmapLoad("catbus.heb");
+        // HEBitmapTable *table = HEBitmapTableLoad("coin.hebt");
+        // he_bitmap = HEBitmapAtIndex(table, 0);
         
         for(int i = 0; i < ENTITY_COUNT; i++)
         {
@@ -67,11 +74,18 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
         
         debugMenuItem = playdate->system->addCheckmarkMenuItem("Debug", debug_mode, debugMenuCallback, NULL);
         
-		// Note: If you set an update callback in the kEventInit handler, the system assumes the game is pure C and doesn't run any Lua code in the game
-		pd->system->setUpdateCallback(update, pd);
-	}
-	
-	return 0;
+        // Note: If you set an update callback in the kEventInit handler, the system assumes the game is pure C and doesn't run any Lua code in the game
+        pd->system->setUpdateCallback(update, pd);
+#endif
+    }
+    else if(event == kEventInitLua)
+    {
+#ifdef LUA_EXAMPLE
+        HEBitmapInit(pd, 1);
+#endif
+    }
+    
+    return 0;
 }
 
 static int update(void *userdata)
@@ -168,21 +182,40 @@ static int update(void *userdata)
         }
         
         int x = x_delta;
-        int y = LCD_ROWS / 2 - he_bitmap->height / 2 + y_delta;
+        int base_y = LCD_ROWS / 2 - he_bitmap->height / 2;
+        int y = base_y + y_delta;
+        
+        int clip_x = 40;
+        int clip_width = 90;
+        int clip_height = 90;
+        int clip_y = base_y;
+        
+        if(debug_clip)
+        {
+            playdate->graphics->fillRect(clip_x, clip_y - 4, clip_width, 2, kColorBlack);
+        }
         
         if(use_sdk)
         {
+            if(debug_clip)
+            {
+                playdate->graphics->setClipRect(clip_x, clip_y, clip_width, clip_height);
+            }
             playdate->graphics->drawBitmap(lcd_bitmap, x, y, kBitmapUnflipped);
         }
         else
         {
+            if(debug_clip)
+            {
+                HEBitmapSetClipRect(clip_x, clip_y, clip_width, clip_height);
+            }
             HEBitmapDraw(he_bitmap, x, y);
         }
     }
     
     playdate->system->drawFPS(0, 0);
     
-	return 1;
+    return 1;
 }
 
 static void debugMenuCallback(void *userdata)

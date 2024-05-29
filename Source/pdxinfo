@@ -1,7 +1,7 @@
 name=HEBitmap
 author=Risolvi Productions
 description=HEBitmap
-bundleID=com.risolvipro.HEBitmap
+bundleID=com.risolvipro.hebitmap
 imagePath=
-version=1.0
-buildNumber=1
+version=1.1
+buildNumber=2

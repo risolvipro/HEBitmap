@@ -7,36 +7,48 @@
 
 #include "hebitmap_prv.h"
 
-void adjust_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top, int target_width, int target_height)
+_HEBitmapRect _clipRect = (_HEBitmapRect){
+    .x = 0,
+    .y = 0,
+    .width = LCD_COLUMNS,
+    .height = LCD_ROWS
+};
+
+_HEBitmapRect clipRect = (_HEBitmapRect){
+    .x = 0,
+    .y = 0,
+    .width = LCD_COLUMNS,
+    .height = LCD_ROWS
+};
+
+void clip_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top, _HEBitmapRect clipRect)
 {
     _HEBitmap *prv = bitmap->prv;
     
+    *x1 = x;
     *offset_left = 0;
+
+    if(x < clipRect.x)
+    {
+        *x1 = clipRect.x;
+        *offset_left = clipRect.x - x;
+    }
+    
+    *y1 = y;
     *offset_top = 0;
     
-    if(x >= 0)
+    if(y < clipRect.y)
     {
-        *x1 = x;
-    }
-    else
-    {
-        *x1 = 0;
-        *offset_left = -x;
+        *y1 = clipRect.y;
+        *offset_top = clipRect.y - y;
     }
     
-    if(y >= 0)
-    {
-        *y1 = y;
-    }
-    else
-    {
-        *y1 = 0;
-        *offset_top = -y;
-    }
+    int bitmap_x2 = x + prv->bw;
+    int bitmap_y2 = y + prv->bh;
     
-    unsigned int p_x2 = *x1 - *offset_left + prv->bw;
-    unsigned int p_y2 = *y1 - *offset_top + prv->bh;
-    
-    *x2 = HEBITMAP_MIN(p_x2, target_width);
-    *y2 = HEBITMAP_MIN(p_y2, target_height);
+    int clip_x2 = clipRect.x + clipRect.width;
+    int clip_y2 = clipRect.y + clipRect.height;
+
+    *x2 = hebitmap_min(bitmap_x2, clip_x2);
+    *y2 = hebitmap_min(bitmap_y2, clip_y2);
 }

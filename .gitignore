@@ -1,6 +1,12 @@
+.vscode
 *.xcodeproj
 build/
+cmake/
 Source/pdex.bin
 Source/pdex.elf
 Source/pdex.dylib
 *.pdx
+lua/Source/pdex.bin
+lua/Source/pdex.elf
+lua/Source/pdex.dylib
+lua/build/

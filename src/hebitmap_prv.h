@@ -10,10 +10,7 @@
 
 #include "hebitmap.h"
 
-#define HEBITMAP_MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define HEBITMAP_MIN(x, y) (((x) < (y)) ? (x) : (y))
-
-typedef struct {
+typedef struct _HEBitmap {
     uint8_t *data;
     uint8_t *mask;
     int rowbytes;
@@ -21,9 +18,41 @@ typedef struct {
     int by;
     int bw;
     int bh;
+    uint8_t *buffer;
+    int isOwner;
+    HEBitmapTable *bitmapTable;
+    LuaUDObject *luaRef;
+    LuaUDObject *luaTableRef;
 } _HEBitmap;
 
-void adjust_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top, int target_width, int target_height);
+typedef struct _HEBitmapTable {
+    HEBitmap **bitmaps;
+    uint8_t *buffer;
+    int luaRefCount;
+    LuaUDObject *luaRef;
+} _HEBitmapTable;
+
+typedef struct {
+    int x;
+    int y;
+    int width;
+    int height;
+} _HEBitmapRect;
+
+extern _HEBitmapRect _clipRect;
+extern _HEBitmapRect clipRect;
+
+void clip_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top, _HEBitmapRect clipRect);
+
+static inline int hebitmap_min(const int a, const int b)
+{
+    return a < b ? a : b;
+}
+
+static inline int hebitmap_max(const int a, const int b)
+{
+    return a > b ? a : b;
+}
 
 static inline uint32_t bswap32(uint32_t n)
 {
