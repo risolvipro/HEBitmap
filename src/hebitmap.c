@@ -16,7 +16,7 @@
 static void buffer_align_8_32(uint8_t *dst, uint8_t *src, int dst_cols, int src_cols, int x, int y, int width, int height, uint8_t fill_value);
 static void get_bounds(uint8_t *mask, int rowbytes, int width, int height, int *bx, int *by, int *bw, int *bh);
 static inline uint32_t bswap32(uint32_t n);
-static HEBitmap* HEBitmapFromBuffer(uint8_t *buffer, int isOwner);
+static HEBitmap* HEBitmapFromBuffer(uint8_t *buffer, int isOwner, int hasData);
 static uint32_t read_uint8(uint8_t **buffer_ptr);
 static uint32_t read_uint32(uint8_t **buffer_ptr);
 
@@ -41,6 +41,7 @@ HEBitmap* HEBitmapBase(void)
     
     prv->buffer = NULL;
     prv->isOwner = 0;
+    prv->hasData = 0;
     prv->bitmapTable = NULL;
     
     bitmap->width = 0;
@@ -78,6 +79,7 @@ HEBitmap* _HEBitmapFromLCDBitmap(LCDBitmap *lcd_bitmap, int isOwner)
     _HEBitmap *prv = bitmap->prv;
     
     prv->isOwner = isOwner;
+    prv->hasData = 1;
     
     int width, height, rowbytes;
     uint8_t *mask, *data;
@@ -134,16 +136,19 @@ HEBitmap* HEBitmapLoadHEB(const char *filename)
     uint8_t *buffer = playdate->system->realloc(0, file_size);
     playdate->file->read(file, buffer, file_size);
     
-    return HEBitmapFromBuffer(buffer, 1);
+    playdate->file->close(file);
+    
+    return HEBitmapFromBuffer(buffer, 1, 1);
 }
 
-HEBitmap* HEBitmapFromBuffer(uint8_t *buffer, int isOwner)
+HEBitmap* HEBitmapFromBuffer(uint8_t *buffer, int isOwner, int hasData)
 {
     HEBitmap *bitmap = HEBitmapBase();
     _HEBitmap *prv = bitmap->prv;
     
     prv->buffer = buffer;
     prv->isOwner = isOwner;
+    prv->hasData = hasData;
     
     uint8_t *buffer_ptr = buffer;
     
@@ -237,7 +242,7 @@ void _HEBitmapFree(HEBitmap *bitmap)
 {
     _HEBitmap *prv = bitmap->prv;
     
-    if(prv->isOwner)
+    if(prv->hasData)
     {
         if(prv->buffer)
         {
@@ -405,10 +410,12 @@ HEBitmapTable* HEBitmapTableLoadHEBT(const char *filename)
     for(unsigned int i = 0; i < length; i++)
     {
         uint32_t bitmap_size = read_uint32(&buffer_ptr);
-        HEBitmap *bitmap = HEBitmapFromBuffer(buffer_ptr, 0);
+        HEBitmap *bitmap = HEBitmapFromBuffer(buffer_ptr, 0, 0);
         prv->bitmaps[i] = bitmap;
         buffer_ptr += bitmap_size;
     }
+    
+    playdate->file->close(file);
     
     return bitmapTable;
 }
@@ -448,7 +455,7 @@ void HEBitmapTableFree(HEBitmapTable *bitmapTable)
     for(unsigned int i = 0; i < bitmapTable->length; i++)
     {
         HEBitmap *bitmap = prv->bitmaps[i];
-        HEBitmapFree(bitmap);
+        _HEBitmapFree(bitmap);
     }
     playdate->system->realloc(prv->bitmaps, 0);
     

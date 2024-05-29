@@ -20,6 +20,7 @@ typedef struct _HEBitmap {
     int bh;
     uint8_t *buffer;
     int isOwner;
+    int hasData;
     HEBitmapTable *bitmapTable;
     LuaUDObject *luaRef;
     LuaUDObject *luaTableRef;
