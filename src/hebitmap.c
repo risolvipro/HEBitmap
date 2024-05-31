@@ -26,7 +26,7 @@ static PlaydateAPI *playdate;
 static char *lua_kBitmap = "hebitmap.bitmap";
 static char *lua_kBitmapTable = "hebitmap.bitmaptable";
 
-static _HEBitmapRect screenRect = (_HEBitmapRect){
+static const _HEBitmapRect screenRect = {
     .x = 0,
     .y = 0,
     .width = LCD_COLUMNS,

@@ -7,14 +7,14 @@
 
 #include "hebitmap_prv.h"
 
-_HEBitmapRect _clipRect = (_HEBitmapRect){
+_HEBitmapRect _clipRect = {
     .x = 0,
     .y = 0,
     .width = LCD_COLUMNS,
     .height = LCD_ROWS
 };
 
-_HEBitmapRect clipRect = (_HEBitmapRect){
+_HEBitmapRect clipRect = {
     .x = 0,
     .y = 0,
     .width = LCD_COLUMNS,
