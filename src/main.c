@@ -55,10 +55,6 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
         lcd_bitmap = playdate->graphics->loadBitmap("dvd", NULL);
         he_bitmap = HEBitmapLoad("dvd");
         
-        // he_bitmap = HEBitmapLoad("catbus.heb");
-        // HEBitmapTable *table = HEBitmapTableLoad("coin.hebt");
-        // he_bitmap = HEBitmapAtIndex(table, 0);
-        
         for(int i = 0; i < ENTITY_COUNT; i++)
         {
             Entity *entity = playdate->system->realloc(NULL, sizeof(Entity));

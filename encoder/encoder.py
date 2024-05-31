@@ -1,6 +1,7 @@
 import os
 import argparse
 from PIL import Image
+from PIL import ImageSequence
 import re
 
 bitmap_version = 1
@@ -9,7 +10,7 @@ bitmap_table_version = 1
 # arguments
 
 parser = argparse.ArgumentParser(description="HEBitmap Encoder")
-parser.add_argument('-i', "--input", help="input file. You can pass in a file or a folder (bitmap table). The folder uses the same name convention of a Playdate table e.g. name-table-1.png", required=True)
+parser.add_argument('-i', "--input", help="input file. You can pass in a file or a folder containing a Playdate image table (name-table-1.png, name-table-2.png, ...)", required=True)
 
 args = parser.parse_args()
 
@@ -25,10 +26,7 @@ def set_bit(byte, value, position):
         return byte & ~(1 << position)
     return byte
 
-def encode_image(file):
-    im = Image.open(file)
-    has_mask = 'A' in im.mode
-    
+def encode_image(im):
     im = im.convert('RGBA')
     
     w, h = im.size
@@ -45,6 +43,8 @@ def encode_image(file):
     rowbytes = ((bw + 31) // 32) * 4
     aligned_width = rowbytes * 8
 
+    has_mask = False
+
     data = bytearray()
     mask = bytearray()
 
@@ -56,9 +56,12 @@ def encode_image(file):
 
         for x in range(bx, bx + aligned_width):
             r, g, b, a = (0, 0, 0, 0)
+
             if x < (bx + bw):
                 r, g, b, a = im.getpixel((x,y))
-            
+                if a <= 127:
+                    has_mask = True        
+
             color = round(0.2125 * r + 0.7154 * g + 0.0721 * b)
             
             data_bit = 0 if (color < 127) else 1
@@ -96,22 +99,53 @@ def encode_image(file):
 
     return output
 
+def save_table(name, length, imagesData):
+    data = bytearray()
+
+    data.extend(bitmap_table_version.to_bytes(4, byteorder="big"))
+    data.extend(length.to_bytes(4, byteorder="big"))
+    data.extend(imagesData)
+
+    result_filename = name + ".hebt"
+    f = open(os.path.join(output_dir, result_filename), "wb")
+    f.write(data)
+    f.close()
+    
+def encode_table_image(im):
+    imageData = encode_image(im)
+
+    data = bytearray()
+    data.extend(len(imageData).to_bytes(4, byteorder="big"))
+    data.extend(imageData)
+
+    return data
+
 input_file = os.path.join(working_dir, input_filename)
 if os.path.isabs(input_filename):
     input_file = input_filename
     output_dir = os.path.dirname(input_filename)
 
 if os.path.isfile(input_file):
-    imageData = encode_image(input_file)
-    
     filename = os.path.basename(input_file)
     filename_no_ext = os.path.splitext(filename)[0]
     
-    result_filename = filename_no_ext + ".heb"
+    im = Image.open(input_file)
+    
+    if im.format == "GIF" and im.is_animated:
+        length = 0
+        imagesData = bytearray()
+        for frame in ImageSequence.Iterator(im):
+            imagesData.extend(encode_table_image(frame))
+            length += 1
+        
+        save_table(filename_no_ext, length, imagesData)
+    else:
+        imageData = encode_image(im)
+        result_filename = filename_no_ext + ".heb"
 
-    f = open(os.path.join(output_dir, result_filename), "wb")
-    f.write(imageData)
-    f.close()
+        f = open(os.path.join(output_dir, result_filename), "wb")
+        f.write(imageData)
+        f.close()
 elif os.path.isdir(input_file):
     input_dir = input_file
     dirname = os.path.basename(input_dir)
@@ -127,24 +161,14 @@ elif os.path.isdir(input_file):
             tableFiles.append((index, name, filepath))
     
     tableFiles = sorted(tableFiles, key=lambda file: file[0])
-    
+
     if len(tableFiles) > 0:
         tableName = tableFiles[0][1]
 
-        tableData = bytearray()
-
-        tableData.extend(bitmap_table_version.to_bytes(4, byteorder="big"))
-        tableData.extend(len(tableFiles).to_bytes(4, byteorder="big"))
-
+        imagesData = bytearray()
         for tableFile in tableFiles:
-            filepath = tableFile[2]
-            imageData = encode_image(filepath)
-
-            tableData.extend(len(imageData).to_bytes(4, byteorder="big"))
-            tableData.extend(imageData)
-
-        result_filename = tableName + ".hebt"
-
-        f = open(os.path.join(output_dir, result_filename), "wb")
-        f.write(tableData)
-        f.close()
+            filename = tableFile[2]
+            im = Image.open(filename)
+            imagesData.extend(encode_table_image(im))
+        
+        save_table(tableName, len(tableFiles), imagesData)

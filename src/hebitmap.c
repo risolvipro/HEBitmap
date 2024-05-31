@@ -19,6 +19,7 @@ static inline uint32_t bswap32(uint32_t n);
 static HEBitmap* HEBitmapFromBuffer(uint8_t *buffer, int isOwner, int hasData);
 static uint32_t read_uint8(uint8_t **buffer_ptr);
 static uint32_t read_uint32(uint8_t **buffer_ptr);
+static void allocation_failed(void);
 
 static PlaydateAPI *playdate;
 
@@ -75,18 +76,47 @@ HEBitmap* HEBitmapLoad(const char *filename)
 
 HEBitmap* _HEBitmapFromLCDBitmap(LCDBitmap *lcd_bitmap, int isOwner)
 {
+    int width, height, rowbytes;
+    uint8_t *lcd_mask, *lcd_data;
+    playdate->graphics->getBitmapData(lcd_bitmap, &width, &height, &rowbytes, &lcd_mask, &lcd_data);
+    
+    if(!lcd_data)
+    {
+        return NULL;
+    }
+    
+    int bx, by, bw, bh;
+    get_bounds(lcd_mask, rowbytes, width, height, &bx, &by, &bw, &bh);
+    
+    int rowbytes_aligned = ((bw + 31) / 32) * 4;
+    size_t data_size = rowbytes_aligned * bh;
+    
+    uint8_t *data = playdate->system->realloc(NULL, data_size);
+    
+    if(!data)
+    {
+        allocation_failed();
+        return NULL;
+    }
+    
+    uint8_t *mask = NULL;
+    
+    if(lcd_mask)
+    {
+        mask = playdate->system->realloc(NULL, data_size);
+        if(!mask)
+        {
+            allocation_failed();
+            playdate->system->realloc(data, 0);
+            return NULL;
+        }
+    }
+    
     HEBitmap *bitmap = HEBitmapBase();
     _HEBitmap *prv = bitmap->prv;
     
     prv->isOwner = isOwner;
     prv->hasData = 1;
-    
-    int width, height, rowbytes;
-    uint8_t *mask, *data;
-    playdate->graphics->getBitmapData(lcd_bitmap, &width, &height, &rowbytes, &mask, &data);
-    
-    int bx, by, bw, bh;
-    get_bounds(mask, rowbytes, width, height, &bx, &by, &bw, &bh);
     
     prv->bx = bx;
     prv->by = by;
@@ -96,21 +126,15 @@ HEBitmap* _HEBitmapFromLCDBitmap(LCDBitmap *lcd_bitmap, int isOwner)
     bitmap->width = width;
     bitmap->height = height;
     
-    int rowbytes_aligned = ((bw + 31) / 32) * 4;
-    
     prv->rowbytes = rowbytes_aligned;
-    
-    size_t data_size = rowbytes_aligned * bh;
 
-    prv->data = playdate->system->realloc(NULL, data_size);
-    buffer_align_8_32(prv->data, data, rowbytes_aligned, rowbytes, bx, by, bw, bh, 0x00);
-    
-    prv->mask = NULL;
-    
-    if(mask)
+    prv->data = data;
+    buffer_align_8_32(prv->data, lcd_data, rowbytes_aligned, rowbytes, bx, by, bw, bh, 0x00);
+        
+    prv->mask = mask;
+    if(prv->mask)
     {
-        prv->mask = playdate->system->realloc(NULL, data_size);
-        buffer_align_8_32(prv->mask, mask, rowbytes_aligned, rowbytes, bx, by, bw, bh, 0x00);
+        buffer_align_8_32(prv->mask, lcd_mask, rowbytes_aligned, rowbytes, bx, by, bw, bh, 0x00);
     }
     
     return bitmap;
@@ -134,9 +158,17 @@ HEBitmap* HEBitmapLoadHEB(const char *filename)
     playdate->file->seek(file, 0, SEEK_SET);
 
     uint8_t *buffer = playdate->system->realloc(0, file_size);
-    playdate->file->read(file, buffer, file_size);
-    
+    if(buffer)
+    {
+        playdate->file->read(file, buffer, file_size);
+    }
     playdate->file->close(file);
+    
+    if(!buffer)
+    {
+        allocation_failed();
+        return NULL;
+    }
     
     return HEBitmapFromBuffer(buffer, 1, 1);
 }
@@ -314,9 +346,12 @@ void HEBitmapFree(HEBitmap *bitmap)
             HEBitmapTable *bitmapTable = prv->bitmapTable;
             _HEBitmapTable *bitmapTablePrv = bitmapTable->prv;
             bitmapTablePrv->luaRefCount--;
-            if(bitmapTablePrv->luaRefCount <= 0)
+            if(bitmapTablePrv->luaRefCount == 0)
             {
                 playdate->lua->releaseObject(prv->luaTableRef);
+            }
+            else if(bitmapTablePrv->luaRefCount < 0)
+            {
                 bitmapTablePrv->luaRefCount = 0;
             }
         }
@@ -368,11 +403,32 @@ HEBitmapTable* HEBitmapTableFromLCDBitmapTable(LCDBitmapTable *lcd_bitmapTable)
     
     for(int i = 0; i < length; i++)
     {
+        prv->bitmaps[i] = NULL;
+    }
+    
+    int valid = 1;
+    
+    for(int i = 0; i < length; i++)
+    {
         LCDBitmap *lcd_bitmap = playdate->graphics->getTableBitmap(lcd_bitmapTable, i);
         HEBitmap *bitmap = _HEBitmapFromLCDBitmap(lcd_bitmap, 0);
-        _HEBitmap *bitmapPrv = bitmap->prv;
-        bitmapPrv->bitmapTable = bitmapTable;
-        prv->bitmaps[i] = bitmap;
+        if(bitmap)
+        {
+            _HEBitmap *bitmapPrv = bitmap->prv;
+            bitmapPrv->bitmapTable = bitmapTable;
+            prv->bitmaps[i] = bitmap;
+        }
+        else
+        {
+            valid = 0;
+            break;
+        }
+    }
+    
+    if(!valid)
+    {
+        HEBitmapTableFree(bitmapTable);
+        return NULL;
     }
     
     return bitmapTable;
@@ -391,7 +447,17 @@ HEBitmapTable* HEBitmapTableLoadHEBT(const char *filename)
     playdate->file->seek(file, 0, SEEK_SET);
 
     uint8_t *buffer = playdate->system->realloc(0, file_size);
-    playdate->file->read(file, buffer, file_size);
+    if(buffer)
+    {
+        playdate->file->read(file, buffer, file_size);
+    }
+    playdate->file->close(file);
+    
+    if(!buffer)
+    {
+        allocation_failed();
+        return NULL;
+    }
     
     HEBitmapTable *bitmapTable = HEBitmapTableBase();
     _HEBitmapTable *prv = bitmapTable->prv;
@@ -414,8 +480,6 @@ HEBitmapTable* HEBitmapTableLoadHEBT(const char *filename)
         prv->bitmaps[i] = bitmap;
         buffer_ptr += bitmap_size;
     }
-    
-    playdate->file->close(file);
     
     return bitmapTable;
 }
@@ -445,6 +509,7 @@ HEBitmap* HEBitmapAtIndex(HEBitmapTable *bitmapTable, unsigned int index)
         
         return prv->bitmaps[index];
     }
+    
     return NULL;
 }
 
@@ -455,7 +520,10 @@ void HEBitmapTableFree(HEBitmapTable *bitmapTable)
     for(unsigned int i = 0; i < bitmapTable->length; i++)
     {
         HEBitmap *bitmap = prv->bitmaps[i];
-        _HEBitmapFree(bitmap);
+        if(bitmap)
+        {
+            _HEBitmapFree(bitmap);
+        }
     }
     playdate->system->realloc(prv->bitmaps, 0);
     
@@ -548,7 +616,7 @@ static void buffer_align_8_32(uint8_t *dst, uint8_t *src, int dst_rowbytes, int 
     }
 }
 
-uint32_t read_uint8(uint8_t **buffer_ptr)
+static uint32_t read_uint8(uint8_t **buffer_ptr)
 {
     uint8_t *buffer = *buffer_ptr;
     uint8_t value = buffer[0];
@@ -556,12 +624,27 @@ uint32_t read_uint8(uint8_t **buffer_ptr)
     return value;
 }
 
-uint32_t read_uint32(uint8_t **buffer_ptr)
+static uint32_t read_uint32(uint8_t **buffer_ptr)
 {
     uint8_t *buffer = *buffer_ptr;
     uint32_t value = buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3];
     *buffer_ptr += 4;
     return value;
+}
+
+static void allocation_failed(void)
+{
+    playdate->system->logToConsole("HEBitmap: cannot allocate data");
+}
+
+static int lua_castInt(lua_State *L, int i)
+{
+    enum LuaType type = playdate->lua->getArgType(i, NULL);
+    if(type == kTypeFloat)
+    {
+        return playdate->lua->getArgFloat(i);
+    }
+    return playdate->lua->getArgInt(i);
 }
 
 static int lua_bitmapNew(lua_State *L)
@@ -609,8 +692,8 @@ static int lua_bitmapGetSize(lua_State *L)
 static int lua_bitmapColorAt(lua_State *L)
 {
     HEBitmap *bitmap = playdate->lua->getArgObject(1, lua_kBitmap, NULL);
-    int x = playdate->lua->getArgInt(2);
-    int y = playdate->lua->getArgInt(3);
+    int x = lua_castInt(L, 2);
+    int y = lua_castInt(L, 3);
     LCDColor color = HEBitmapColorAt(bitmap, x, y);
     int lua_color;
     switch(color)
@@ -632,8 +715,8 @@ static int lua_bitmapColorAt(lua_State *L)
 static int lua_bitmapDraw(lua_State *L)
 {
     HEBitmap *bitmap = playdate->lua->getArgObject(1, lua_kBitmap, NULL);
-    int x = playdate->lua->getArgInt(2);
-    int y = playdate->lua->getArgInt(3);
+    int x = lua_castInt(L, 2);
+    int y = lua_castInt(L, 3);
     HEBitmapDraw(bitmap, x, y);
     return 0;
 }
@@ -693,8 +776,13 @@ static int lua_bitmapTableLoadHEBT(lua_State *L)
 static int lua_bitmapAtIndex(lua_State *L)
 {
     HEBitmapTable *bitmapTable = playdate->lua->getArgObject(1, lua_kBitmapTable, NULL);
-    int index = playdate->lua->getArgInt(2);
-    HEBitmap *bitmap = HEBitmapAtIndex(bitmapTable, index);
+    int index = lua_castInt(L, 2) - 1;
+    
+    HEBitmap *bitmap = NULL;
+    if(index >= 0)
+    {
+        bitmap = HEBitmapAtIndex(bitmapTable, index);
+    }
     if(bitmap)
     {
         _HEBitmap *bitmapPrv = bitmap->prv;
@@ -707,7 +795,6 @@ static int lua_bitmapAtIndex(lua_State *L)
     }
     return 1;
 }
-
 
 static int lua_bitmapTableLength(lua_State *L)
 {
@@ -734,10 +821,10 @@ static const lua_reg lua_bitmapTable[] = {
 
 static int lua_setClipRect(lua_State *L)
 {
-    int x = playdate->lua->getArgInt(1);
-    int y = playdate->lua->getArgInt(2);
-    int width = playdate->lua->getArgInt(3);
-    int height = playdate->lua->getArgInt(4);
+    int x = lua_castInt(L, 1);
+    int y = lua_castInt(L, 2);
+    int width = lua_castInt(L, 3);
+    int height = lua_castInt(L, 4);
     HEBitmapSetClipRect(x, y, width, height);
     return 0;
 }

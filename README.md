@@ -86,7 +86,7 @@ local bitmap = hebitmap.bitmap.new("catbus")
 
 function playdate.update()
     -- Draw
-	bitmap:draw(100, 100)
+    bitmap:draw(100, 100)
 end
 ```
 
@@ -138,4 +138,18 @@ __hebitmap.bitmaptable.loadHEBT(filename)__\
 Load a new HEBitmapTable from a .hebt file (use the Python encoder to create it).
 
 __hebitmap.bitmaptable:getBitmap(index)__\
-Get the bitmap at the given index in a table.
+Get the bitmap at the given index in a table (1-based indexing).
+
+__hebitmap.bitmaptable:getLength()__\
+Get the bitmap table length.
+
+## Encoder
+
+You can use the Python encoder to create heb/hebt files, supported inputs are:
+* Image
+* Animated GIF (saved as bitmap table)
+* Folder containing a Playdate image table (name-table-1.png, name-table-2.png, ...)
+
+### Usage
+`python encoder.py -i <file_or_folder>`
+
