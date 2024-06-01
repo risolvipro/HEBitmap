@@ -4,8 +4,7 @@ from PIL import Image
 from PIL import ImageSequence
 import re
 
-bitmap_version = 1
-bitmap_table_version = 1
+format_version = 2
 
 # arguments
 
@@ -18,13 +17,21 @@ input_filename = args.input
 
 working_dir = os.getcwd()
 output_dir = working_dir
-
+    
 def set_bit(byte, value, position):
     if value == 1:
         return byte | (1 << position)
     elif value == 0:
         return byte & ~(1 << position)
     return byte
+
+def add_padding(data):
+    padding = (len(data) + 4) % 32
+    if padding > 0:
+        padding = 32 - padding
+    data.extend(padding.to_bytes(4, byteorder="big"))
+    for _ in range(padding):
+        data.extend((0).to_bytes(1, byteorder="big"))
 
 def encode_image(im):
     im = im.convert('RGBA')
@@ -35,7 +42,7 @@ def encode_image(im):
     bbox = im.getbbox()
     if bbox:
         bounds = bbox
-        
+
     bx, by, b_right, b_bottom = bounds
     bw = b_right - bx
     bh = b_bottom - by
@@ -81,7 +88,7 @@ def encode_image(im):
 
     output = bytearray()
     
-    output.extend(bitmap_version.to_bytes(4, byteorder="big"))
+    output.extend(format_version.to_bytes(4, byteorder="big"))
 
     output.extend(w.to_bytes(4, byteorder="big"))
     output.extend(h.to_bytes(4, byteorder="big"))
@@ -93,6 +100,9 @@ def encode_image(im):
     has_mask_int = 1 if has_mask else 0
     output.extend(has_mask_int.to_bytes(1, byteorder="big"))
 
+    if format_version >= 2:
+        add_padding(output)
+
     output.extend(data)
     if has_mask:
         output.extend(mask)
@@ -102,8 +112,12 @@ def encode_image(im):
 def save_table(name, length, imagesData):
     data = bytearray()
 
-    data.extend(bitmap_table_version.to_bytes(4, byteorder="big"))
+    data.extend(format_version.to_bytes(4, byteorder="big"))
     data.extend(length.to_bytes(4, byteorder="big"))
+
+    if format_version >= 2:
+        add_padding(data)
+
     data.extend(imagesData)
 
     result_filename = name + ".hebt"

@@ -185,7 +185,7 @@ HEBitmap* HEBitmapFromBuffer(uint8_t *buffer, int isOwner, int hasData)
     uint8_t *buffer_ptr = buffer;
     
     // read version
-    read_uint32(&buffer_ptr);
+    uint32_t version = read_uint32(&buffer_ptr);
     
     bitmap->width = read_uint32(&buffer_ptr);
     bitmap->height = read_uint32(&buffer_ptr);
@@ -196,6 +196,13 @@ HEBitmap* HEBitmapFromBuffer(uint8_t *buffer, int isOwner, int hasData)
     prv->rowbytes = read_uint32(&buffer_ptr);
     
     uint8_t has_mask = read_uint8(&buffer_ptr);
+    
+    if(version >= 2)
+    {
+        // version 2 supports padding
+        uint32_t padding_len = read_uint32(&buffer_ptr);
+        buffer_ptr += padding_len;
+    }
     
     prv->data = buffer_ptr;
     
@@ -467,11 +474,18 @@ HEBitmapTable* HEBitmapTableLoadHEBT(const char *filename)
     uint8_t *buffer_ptr = buffer;
     
     // read version
-    read_uint32(&buffer_ptr);
+    uint32_t version = read_uint32(&buffer_ptr);
     
     uint32_t length = read_uint32(&buffer_ptr);
     prv->bitmaps = playdate->system->realloc(0, length * sizeof(HEBitmap*));
     bitmapTable->length = length;
+    
+    if(version >= 2)
+    {
+        // version 2 supports padding
+        uint32_t padding_len = read_uint32(&buffer_ptr);
+        buffer_ptr += padding_len;
+    }
     
     for(unsigned int i = 0; i < length; i++)
     {
@@ -637,16 +651,6 @@ static void allocation_failed(void)
     playdate->system->logToConsole("HEBitmap: cannot allocate data");
 }
 
-static int lua_castInt(lua_State *L, int i)
-{
-    enum LuaType type = playdate->lua->getArgType(i, NULL);
-    if(type == kTypeFloat)
-    {
-        return playdate->lua->getArgFloat(i);
-    }
-    return playdate->lua->getArgInt(i);
-}
-
 static int lua_bitmapNew(lua_State *L)
 {
     const char *filename = playdate->lua->getArgString(1);
@@ -692,8 +696,8 @@ static int lua_bitmapGetSize(lua_State *L)
 static int lua_bitmapColorAt(lua_State *L)
 {
     HEBitmap *bitmap = playdate->lua->getArgObject(1, lua_kBitmap, NULL);
-    int x = lua_castInt(L, 2);
-    int y = lua_castInt(L, 3);
+    int x = playdate->lua->getArgFloat(2);
+    int y = playdate->lua->getArgFloat(3);
     LCDColor color = HEBitmapColorAt(bitmap, x, y);
     int lua_color;
     switch(color)
@@ -715,8 +719,8 @@ static int lua_bitmapColorAt(lua_State *L)
 static int lua_bitmapDraw(lua_State *L)
 {
     HEBitmap *bitmap = playdate->lua->getArgObject(1, lua_kBitmap, NULL);
-    int x = lua_castInt(L, 2);
-    int y = lua_castInt(L, 3);
+    int x = playdate->lua->getArgFloat(2);
+    int y = playdate->lua->getArgFloat(3);
     HEBitmapDraw(bitmap, x, y);
     return 0;
 }
@@ -772,11 +776,10 @@ static int lua_bitmapTableLoadHEBT(lua_State *L)
     return 1;
 }
 
-
 static int lua_bitmapAtIndex(lua_State *L)
 {
     HEBitmapTable *bitmapTable = playdate->lua->getArgObject(1, lua_kBitmapTable, NULL);
-    int index = lua_castInt(L, 2) - 1;
+    int index = (int)playdate->lua->getArgFloat(2) - 1;
     
     HEBitmap *bitmap = NULL;
     if(index >= 0)
@@ -821,10 +824,10 @@ static const lua_reg lua_bitmapTable[] = {
 
 static int lua_setClipRect(lua_State *L)
 {
-    int x = lua_castInt(L, 1);
-    int y = lua_castInt(L, 2);
-    int width = lua_castInt(L, 3);
-    int height = lua_castInt(L, 4);
+    int x = playdate->lua->getArgFloat(1);
+    int y = playdate->lua->getArgFloat(2);
+    int width = playdate->lua->getArgFloat(3);
+    int height = playdate->lua->getArgFloat(4);
     HEBitmapSetClipRect(x, y, width, height);
     return 0;
 }
