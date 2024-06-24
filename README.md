@@ -40,6 +40,8 @@ HEBitmap_free(bitmap);
 
 ## C Docs
 
+[C API Documentation](https://risolvipro.github.io/HEBitmap/C-API.html)
+
 ## Lua
 
 ```c
@@ -84,6 +86,8 @@ end
 You can now build and run it as a Lua project.
 
 ## Lua Docs
+
+[Lua API Documentation](https://risolvipro.github.io/HEBitmap/Lua-API.html)
 
 ## Encoder
 
