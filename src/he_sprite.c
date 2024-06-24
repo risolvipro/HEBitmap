@@ -250,6 +250,12 @@ static void _HESprite_remove(HESprite *sprite, int index, int all)
             array_remove(movingSprites, moving_index);
         }
         
+        int visible_index = array_index_of(visibleSprites, sprite);
+        if(visible_index >= 0)
+        {
+            array_remove(visibleSprites, visible_index);
+        }
+        
         for(int i = 0; i < sprites->length; i++)
         {
             HESprite *sprite2 = sprites->items[i];
