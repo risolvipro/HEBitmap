@@ -119,6 +119,8 @@ static void HESprite_visibilityGridAdd(HESprite *sprite);
 static void clearVisibleSprites(void);
 static void clearSpriteCollisions(void);
 
+static PlaydateAPI *playdate;
+
 static HERect gfx_spriteScreenClipRect = {
     .x = 0,
     .y = 0,
@@ -2532,8 +2534,9 @@ static const lua_val lua_spritePublicVal[] = {
     { NULL, kInt, { .intval = 0 } }
 };
 
-void he_sprite_init(int enableLua)
+void he_sprite_init(PlaydateAPI *pd, int enableLua)
 {
+    playdate = pd;
     HESprite_clearScreenClipRect();
     
     sprites = array_new();

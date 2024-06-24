@@ -5,13 +5,11 @@
 //  Created by Matteo D'Ignazio on 12/02/24.
 //
 
-#ifndef hebitmap_prv_h
-#define hebitmap_prv_h
+#ifndef he_prv_h
+#define he_prv_h
 
 #include "he_api.h"
 #include "he_foundation.h"
-
-#define HE_GFX_STACK_SIZE 1024
 
 #define lua_kBitmap "he.bitmap"
 #define lua_kBitmapTable "he.bitmaptable"
@@ -116,11 +114,14 @@ typedef struct {
     HERect clipRect;
 } HEGraphicsContext;
 
-extern PlaydateAPI *playdate;
-extern HEGraphicsContext gfx_stack[HE_GFX_STACK_SIZE];
-extern int gfx_stack_index;
-extern HEGraphicsContext *gfx_context;
-extern const HERect gfx_screenRect;
+extern HEGraphicsContext *he_graphics_context;
+
+static const HERect gfx_screenRect = {
+    .x = 0,
+    .y = 0,
+    .width = LCD_COLUMNS,
+    .height = LCD_ROWS
+};
 
 HEVec2 vec2_new(float x, float y);
 HEVec2 vec2_zero(void);
@@ -223,4 +224,4 @@ static inline uint32_t bswap32(uint32_t n)
 #endif
 }
 
-#endif /* hebitmap_prv_h */
+#endif /* he_prv_h */

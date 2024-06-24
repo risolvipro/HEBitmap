@@ -7,18 +7,9 @@
 
 #include "he_prv.h"
 
-PlaydateAPI *playdate;
+static PlaydateAPI *playdate;
 
-HEGraphicsContext gfx_stack[HE_GFX_STACK_SIZE] = {0};
-int gfx_stack_index = 0;
-HEGraphicsContext *gfx_context;
-
-const HERect gfx_screenRect = {
-    .x = 0,
-    .y = 0,
-    .width = LCD_COLUMNS,
-    .height = LCD_ROWS
-};
+HEGraphicsContext *he_graphics_context;
 
 static void _grid_resize(HEGrid *grid, HERectF rect, float size);
 
@@ -751,8 +742,10 @@ static const lua_reg lua_array[] = {
     { NULL, NULL }
 };
 
-void he_prv_init(int enableLua)
+void he_prv_init(PlaydateAPI *pd, int enableLua)
 {
+    playdate = pd;
+    
     if(enableLua)
     {
         playdate->lua->registerClass(lua_kArray, lua_array, NULL, 0, NULL);

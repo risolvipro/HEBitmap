@@ -14,6 +14,8 @@
 #include "he_bitmap_draw.h" // Mask
 #undef HE_BITMAP_MASK
 
+static PlaydateAPI *playdate;
+
 static HEBitmap* HEBitmap_fromBuffer(uint8_t *buffer, int isOwner);
 
 static void get_bounds(uint8_t *mask, int rowbytes, int width, int height, int *bx, int *by, int *bw, int *bh);
@@ -259,11 +261,11 @@ void HEBitmap_draw(HEBitmap *bitmap, int x, int y)
 {
     if(((_HEBitmap*)bitmap->prv)->mask)
     {
-        HEBitmapDrawMask(bitmap, x, y);
+        HEBitmap_drawMask(playdate, bitmap, x, y);
     }
     else
     {
-        HEBitmapDrawOpaque(bitmap, x, y);
+        HEBitmap_drawOpaque(playdate, bitmap, x, y);
     }
 }
 
@@ -823,8 +825,10 @@ static const lua_reg lua_bitmapTable[] = {
     { NULL, NULL }
 };
 
-void he_bitmap_init(int enableLua)
+void he_bitmap_init(PlaydateAPI *pd, int enableLua)
 {
+    playdate = pd;
+    
     if(enableLua)
     {
         playdate->lua->registerClass(lua_kBitmap, lua_bitmap, NULL, 0, NULL);
