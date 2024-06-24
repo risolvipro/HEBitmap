@@ -13,8 +13,6 @@
 
 #define HE_GFX_STACK_SIZE 1024
 
-extern PlaydateAPI *playdate;
-
 #define lua_kBitmap "he.bitmap"
 #define lua_kBitmapTable "he.bitmaptable"
 #define lua_kSprite "he._sprite"
@@ -118,6 +116,7 @@ typedef struct {
     HERect clipRect;
 } HEGraphicsContext;
 
+extern PlaydateAPI *playdate;
 extern HEGraphicsContext gfx_stack[HE_GFX_STACK_SIZE];
 extern int gfx_stack_index;
 extern HEGraphicsContext *gfx_context;
@@ -211,17 +210,6 @@ static inline int nsign(int sign)
         return -sign;
     }
     return 0;
-}
-
-static inline int round_up_division(const int n, const int q)
-{
-    if(n > 0){
-        return (n + (q - 1)) / q;
-    }
-    else
-    {
-        return (n - (q - 1)) / q;
-    }
 }
 
 static inline uint32_t bswap32(uint32_t n)

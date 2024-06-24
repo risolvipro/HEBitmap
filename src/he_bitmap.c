@@ -259,11 +259,11 @@ void HEBitmap_draw(HEBitmap *bitmap, int x, int y)
 {
     if(((_HEBitmap*)bitmap->prv)->mask)
     {
-        HEBitmapDrawMask(playdate, bitmap, x, y);
+        HEBitmapDrawMask(bitmap, x, y);
     }
     else
     {
-        HEBitmapDrawOpaque(playdate, bitmap, x, y);
+        HEBitmapDrawOpaque(bitmap, x, y);
     }
 }
 

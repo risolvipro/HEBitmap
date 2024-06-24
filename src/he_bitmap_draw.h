@@ -10,9 +10,9 @@
 #include "he_prv.h"
 
 #ifdef HE_BITMAP_MASK
-void HEBitmapDrawMask(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
+void HEBitmapDrawMask(HEBitmap *bitmap, int x, int y)
 #else
-void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
+void HEBitmapDrawOpaque(HEBitmap *bitmap, int x, int y)
 #endif
 {
     _HEBitmap *prv = bitmap->prv;
@@ -21,7 +21,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
     y += prv->by;
     
     HERect clipRect = gfx_context->clipRect;
-        
+    
     if((x + prv->bw) <= clipRect.x || x >= (clipRect.x + clipRect.width) || (y + prv->bh) <= clipRect.y || y >= (clipRect.y + clipRect.height))
     {
         //
