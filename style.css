@@ -43,6 +43,11 @@ section {
 .definition-title {
     font-weight: bold;
     margin-bottom: 0.25em;
+    word-break: break-word;
+}
+
+.definition-description {
+    word-break: break-word;
 }
 
 h1 {
@@ -73,4 +78,5 @@ h2 {
     font-family: monospace;
     font-size: 0.9em;
     margin: 1em 0;
+    overflow: auto;
 }
