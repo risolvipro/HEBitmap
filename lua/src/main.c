@@ -6,7 +6,7 @@
 //
 
 #include "pd_api.h"
-#include "hebitmap.h"
+#include "he_api.h"
 
 #ifdef _WINDLL
 __declspec(dllexport)
@@ -17,7 +17,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
     
     if(event == kEventInitLua)
     {
-        HEBitmapInit(pd, 1);
+        he_library_init(pd, 1);
     }
     
     return 0;

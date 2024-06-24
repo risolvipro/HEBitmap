@@ -1,6 +1,6 @@
 //
 //  main.h
-//  hebitmap
+//  HE Playdate Library
 //
 //  Created by Matteo D'Ignazio on 05/11/23.
 //
@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 #include "pd_api.h"
-#include "hebitmap.h"
+#include "he_api.h"
  
 #define ENTITY_COUNT 1000
 // #define LUA_EXAMPLE
@@ -22,6 +22,8 @@ typedef struct {
 } Entity;
 
 static PlaydateAPI *playdate;
+
+#ifndef LUA_EXAMPLE
 static HEBitmap *he_bitmap;
 static LCDBitmap *lcd_bitmap;
 static int use_sdk = 0;
@@ -35,6 +37,7 @@ static PDMenuItem *debugMenuItem;
 
 static int update(void* userdata);
 static void debugMenuCallback(void *userdata);
+#endif
 
 #ifdef _WINDLL
 __declspec(dllexport)
@@ -50,10 +53,10 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
 #ifndef LUA_EXAMPLE
         playdate->display->setRefreshRate(0);
         
-        HEBitmapInit(pd, 0);
+        he_library_init(pd, 0);
         
         lcd_bitmap = playdate->graphics->loadBitmap("dvd", NULL);
-        he_bitmap = HEBitmapLoad("dvd");
+        he_bitmap = HEBitmap_load("dvd");
         
         for(int i = 0; i < ENTITY_COUNT; i++)
         {
@@ -77,13 +80,14 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
     else if(event == kEventInitLua)
     {
 #ifdef LUA_EXAMPLE
-        HEBitmapInit(pd, 1);
+        he_library_init(pd, 1);
 #endif
     }
     
     return 0;
 }
 
+#ifndef LUA_EXAMPLE
 static int update(void *userdata)
 {
     float dt = playdate->system->getElapsedTime();
@@ -151,7 +155,7 @@ static int update(void *userdata)
             }
             else
             {
-                HEBitmapDraw(he_bitmap, x, y);
+                HEBitmap_draw(he_bitmap, x, y);
             }
         }
     }
@@ -203,9 +207,9 @@ static int update(void *userdata)
         {
             if(debug_clip)
             {
-                HEBitmapSetClipRect(clip_x, clip_y, clip_width, clip_height);
+                he_graphics_setClipRect(clip_x, clip_y, clip_width, clip_height);
             }
-            HEBitmapDraw(he_bitmap, x, y);
+            HEBitmap_draw(he_bitmap, x, y);
         }
     }
     
@@ -218,3 +222,4 @@ static void debugMenuCallback(void *userdata)
 {
     debug_mode = playdate->system->getMenuItemValue(debugMenuItem);
 }
+#endif

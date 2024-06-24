@@ -9,6 +9,8 @@ HEBitmap (**H**igh **E**fficiency Bitmap) is a custom implementation of the draw
 
 This implementation is up to 2x faster than the SDK drawBitmap function, but native features (flip, stencil) are not supported.
 
+The library also provides an (optional) sprite system to efficiently move sprites and check collisions.
+
 ## Benchmark
 
 Bitmap info: 96x96 (masked)
@@ -20,69 +22,39 @@ Bitmap info: 96x96 (masked)
 ## C Example
 
 ```c
-#include "hebitmap.h"
+#include "he_api.h"
 
 // Initialize with PlaydateAPI pointer
 // Pass 1 to enable Lua support
-HEBitmapInit(pd, 0);
+he_library_init(pd, 0);
 
 // Load HEBitmap from a Playdate image file
-HEBitmap *bitmap = HEBitmapLoad("catbus");
+HEBitmap *bitmap = HEBitmap_load("catbus");
 
 // Draw
-HEBitmapDraw(bitmap, 0, 0);
+HEBitmap_draw(bitmap, 0, 0);
 
 // Free
-HEBitmapFree(bitmap);
+HEBitmap_free(bitmap);
 ```
 
 ## C Docs
 
-__HEBitmapTable* HEBitmapLoad(const char *filename);__\
-Load a new HEBitmap from a Playdate image file (similar to playdate->graphics->loadBitmap).
-
-__HEBitmapTable* HEBitmapLoadHEB(const char *filename);__\
-Load a new HEBitmap from a .heb file (use the Python encoder to create it).
-
-__HEBitmap* HEBitmapFromLCDBitmap(LCDBitmap *lcd_bitmap);__\
-Create a HEBitmap from a LCDBitmap.
-
-__void HEBitmapSetClipRect(x, y, width, height);__\
-Set the clip rect.
-
-__void HEBitmapClearClipRect(void);__\
-Clear the clip rect.
-
-__HEBitmapTable* HEBitmapTableLoad(const char *filename);__\
-Load a new HEBitmap from a Playdate image table file (similar to playdate->graphics->loadBitmapTable).
-
-__HEBitmapTable* HEBitmapTableLoadHEBT(const char *filename);__\
-Load a new HEBitmapTable from a .hebt file (use the Python encoder to create it).
-
-__HEBitmapTable* HEBitmapTableFromLCDBitmapTable(LCDBitmapTable *bitmapTable);__\
-Create a HEBitmapTable from a LCDBitmapTable.
-
-__HEBitmap* HEBitmapAtIndex(HEBitmapTable *bitmapTable, unsigned int index);__\
-Get the bitmap at the given index in a table.
-
-__void HEBitmapTableFree(HEBitmapTable *bitmapTable);__\
-Free the bitmap table.
-
 ## Lua
 
 ```c
-#include "hebitmap.h"
+#include "he_api.h"
 
 // Initialize in kEventInitLua
 // Pass 1 to enable Lua support
-HEBitmapInit(pd, 1);
+he_library_init(pd, 1);
 ```
 
 ```lua
-import "hebitmap"
+import "he/bitmap"
 
 -- Load HEBitmap from a Playdate image file
-local bitmap = hebitmap.bitmap.new("catbus")
+local bitmap = he.bitmap.new("catbus")
 
 function playdate.update()
     -- Draw
@@ -94,7 +66,7 @@ end
 
 * Install CMake (run `brew install cmake` from the terminal)
 * In the *lua* folder of the repo you can find a minimal template to create a C-Lua project
-* Copy all the files beginning with "hebitmap" from *src* into *lua/src*
+* Copy all the files beginning with "he_" from *src* into *lua/src*
 * Navigate into the *lua* folder and create a *build* folder
 * Open the terminal and navigate into it
 
@@ -113,36 +85,6 @@ You can now build and run it as a Lua project.
 
 ## Lua Docs
 
-__hebitmap.bitmap.new(filename)__\
-Create a new HEBitmap from a Playdate image file (similar to playdate.graphics.image.new)
-
-__hebitmap.bitmap.loadHEB(filename)__\
-Create a new HEBitmap from a .heb file (use the Python encoder to create it).
-
-__hebitmap.bitmap:draw(x, y)__\
-Draw the bitmap at the given position.
-
-__hebitmap.bitmap:getColorAt(x, y)__\
-Get the color at the given position. It returns a Playdate color such as *playdate.graphics.kColorBlack*
-
-__hebitmap.graphics.setClipRect(x, y, width, height)__\
-Set the clip rect.
-
-__hebitmap.graphics.clearClipRect()__\
-Clear the clip rect.
-
-__hebitmap.bitmaptable.new(filename)__\
-Load a new HEBitmapTable from a Playdate image table file (similar to playdate.graphics.imagetable.new).
-
-__hebitmap.bitmaptable.loadHEBT(filename)__\
-Load a new HEBitmapTable from a .hebt file (use the Python encoder to create it).
-
-__hebitmap.bitmaptable:getBitmap(index)__\
-Get the bitmap at the given index in a table (1-based indexing).
-
-__hebitmap.bitmaptable:getLength()__\
-Get the bitmap table length.
-
 ## Encoder
 
 You can use the Python encoder to create heb/hebt files, supported inputs are:
@@ -150,6 +92,14 @@ You can use the Python encoder to create heb/hebt files, supported inputs are:
 * Animated GIF (saved as bitmap table)
 * Folder containing a Playdate image table (name-table-1.png, name-table-2.png, ...)
 
+### Parameters
+* `-i` `--input` input file or folder
+* `-r` `--raw` save as raw data (no compression)
+
 ### Usage
 `python encoder.py -i <file_or_folder>`
+
+
+
+
 

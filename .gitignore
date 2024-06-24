@@ -5,6 +5,8 @@ cmake/
 Source/pdex.bin
 Source/pdex.elf
 Source/pdex.dylib
+Source/debug.lua
+Source/debug2.lua
 *.pdx
 lua/Source/pdex.bin
 lua/Source/pdex.elf

@@ -30,10 +30,12 @@ set(PLAYDATE_GAME_DEVICE HEBitmap_DEVICE)
 
 project(${PLAYDATE_GAME_NAME} C ASM)
 
+set(LIB_FILES src/main.c src/he_api.c src/he_foundation.c src/he_prv.c src/he_bitmap.c src/he_sprite.c)
+
 if (TOOLCHAIN STREQUAL "armgcc")
-	add_executable(${PLAYDATE_GAME_DEVICE} src/main.c src/hebitmap.c src/hebitmap_prv.c)
+	add_executable(${PLAYDATE_GAME_DEVICE} ${LIB_FILES})
 else()
-	add_library(${PLAYDATE_GAME_NAME} SHARED src/main.c src/hebitmap.c src/hebitmap_prv.c)
+	add_library(${PLAYDATE_GAME_NAME} SHARED ${LIB_FILES})
 endif()
 
 include(${SDK}/C_API/buildsupport/playdate_game.cmake)

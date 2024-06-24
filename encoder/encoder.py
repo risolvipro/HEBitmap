@@ -4,20 +4,22 @@ from PIL import Image
 from PIL import ImageSequence
 import re
 
-format_version = 2
+format_version = 3
 
 # arguments
 
 parser = argparse.ArgumentParser(description="HEBitmap Encoder")
-parser.add_argument('-i', "--input", help="input file. You can pass in a file or a folder containing a Playdate image table (name-table-1.png, name-table-2.png, ...)", required=True)
+parser.add_argument('-i', "--input", help="input file. You can pass in a file or a folder containing a Playdate image table (name-table-1.png, name-table-2.png, ...). Compression is enabled by default.", required=True)
+parser.add_argument('-r', "--raw", help="Save the file as raw data (no compression).", required=False, action='store_true')
 
 args = parser.parse_args()
 
 input_filename = args.input
+compressed = not args.raw
 
 working_dir = os.getcwd()
 output_dir = working_dir
-    
+
 def set_bit(byte, value, position):
     if value == 1:
         return byte | (1 << position)
@@ -32,6 +34,41 @@ def add_padding(data):
     data.extend(padding.to_bytes(4, byteorder="big"))
     for _ in range(padding):
         data.extend((0).to_bytes(1, byteorder="big"))
+        
+def compress(data, rowbytes, bh):
+    
+    output = bytearray()
+    
+    last_byte = 0b00000000
+    last_byte_set = False
+    count = 0
+
+    for row in range(bh):
+        for col in range(rowbytes):
+            byte = data[row * rowbytes + col]
+
+            if not last_byte_set:
+                last_byte_set = True
+                last_byte = byte
+            
+            changed = True
+
+            if last_byte == byte:
+                count += 1
+                if count < 255:
+                    changed = False
+
+            if changed:
+                output.extend(count.to_bytes(1, byteorder="big"))
+                output.extend(last_byte.to_bytes(1, byteorder="big"))
+                count = 1
+                last_byte = byte
+
+    if count > 0:
+        output.extend(count.to_bytes(1, byteorder="big"))
+        output.extend(last_byte.to_bytes(1, byteorder="big"))
+
+    return output
 
 def encode_image(im):
     im = im.convert('RGBA')
@@ -99,13 +136,27 @@ def encode_image(im):
     output.extend(rowbytes.to_bytes(4, byteorder="big"))
     has_mask_int = 1 if has_mask else 0
     output.extend(has_mask_int.to_bytes(1, byteorder="big"))
+    
+    if format_version >= 3:
+        compressed_int = 1 if compressed else 0
+        output.extend(compressed_int.to_bytes(1, byteorder="big"))
 
     if format_version >= 2:
         add_padding(output)
 
-    output.extend(data)
-    if has_mask:
-        output.extend(mask)
+    if format_version >= 3 and compressed:
+        
+        data = compress(data, rowbytes, bh)
+        if has_mask:
+            mask = compress(mask, rowbytes, bh)
+
+        output.extend(data)
+        if has_mask:
+            output.extend(mask)
+    else:
+        output.extend(data)
+        if has_mask:
+            output.extend(mask)
 
     return output
 
@@ -114,6 +165,10 @@ def save_table(name, length, imagesData):
 
     data.extend(format_version.to_bytes(4, byteorder="big"))
     data.extend(length.to_bytes(4, byteorder="big"))
+
+    if format_version >= 3:
+        compressed_int = 1 if compressed else 0
+        data.extend(compressed_int.to_bytes(1, byteorder="big"))
 
     if format_version >= 2:
         add_padding(data)

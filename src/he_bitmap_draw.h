@@ -6,10 +6,10 @@
 //
 
 #include "pd_api.h"
-#include "hebitmap.h"
-#include "hebitmap_prv.h"
+#include "he_api.h"
+#include "he_prv.h"
 
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
 void HEBitmapDrawMask(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
 #else
 void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
@@ -20,6 +20,8 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
     x += prv->bx;
     y += prv->by;
     
+    HERect clipRect = gfx_context->clipRect;
+        
     if((x + prv->bw) <= clipRect.x || x >= (clipRect.x + clipRect.width) || (y + prv->bh) <= clipRect.y || y >= (clipRect.y + clipRect.height))
     {
         //
@@ -29,7 +31,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
     }
     
     unsigned int x1, y1, x2, y2, offset_left, offset_top;
-    clip_bounds(bitmap, x, y, &x1, &y1, &x2, &y2, &offset_left, &offset_top, clipRect);
+    bitmap_clip_bounds(bitmap, x, y, &x1, &y1, &x2, &y2, &offset_left, &offset_top, clipRect);
     
     uint8_t *frame_start = playdate->graphics->getFrame() + y1 * LCD_ROWSIZE + x1 / 32 * 4;
     
@@ -50,7 +52,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
         int data_offset = offset_top * prv->rowbytes;
         
         uint8_t *data_start = prv->data + data_offset;
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
         uint8_t *mask_start = prv->mask + data_offset;
 #endif
         for(int row = y1; row < y2; row++)
@@ -58,7 +60,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
             uint32_t *frame_ptr = (uint32_t*)frame_start;
             uint32_t *data_ptr = (uint32_t*)data_start;
             uint32_t data_left = bswap32(*frame_ptr);
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
             uint32_t *mask_ptr = (uint32_t*)mask_start;
             uint32_t mask_left = 0x00000000;
 #endif
@@ -69,7 +71,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
             {
                 uint32_t data_right = bswap32(*data_ptr) >> shift;
                 uint32_t data = (data_left & shift_mask) | (data_right & ~shift_mask);
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
                 uint32_t mask_right = bswap32(*mask_ptr) >> shift;
                 uint32_t mask = (mask_left & shift_mask) | (mask_right & ~shift_mask);
                 data = (bswap32(*frame_ptr) & ~mask) | (data & mask);
@@ -84,7 +86,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
                 
                 // Fetch data for next iteration
                 data_left = bswap32(*data_ptr++) << (32 - shift);
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
                 // Fetch mask for next iteration
                 mask_left = bswap32(*mask_ptr++) << (32 - shift);
 #endif
@@ -94,7 +96,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
             
             frame_start += LCD_ROWSIZE;
             data_start += prv->rowbytes;
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
             mask_start += prv->rowbytes;
 #endif
         }
@@ -132,7 +134,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
         int data_offset = offset_top * prv->rowbytes + offset_32 / 32 * 4;
         
         uint8_t *data_start = prv->data + data_offset;
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
         uint8_t *mask_start = prv->mask + data_offset;
 #endif
         for(int row = y1; row < y2; row++)
@@ -140,7 +142,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
             uint32_t *frame_ptr = (uint32_t*)frame_start;
             uint32_t *data_ptr = (uint32_t*)data_start;
             uint32_t data_left = bswap32(*data_ptr) << shift;
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
             uint32_t *mask_ptr = (uint32_t*)mask_start;
             uint32_t mask_left = bswap32(*mask_ptr) << shift;
 #endif
@@ -151,7 +153,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
             {
                 uint32_t data_right = ((len + shift) > 32) ? (bswap32(*++data_ptr) >> (32 - shift)) : bswap32(*frame_ptr);
                 uint32_t data = (data_left & shift_mask) | (data_right & ~shift_mask);
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
                 uint32_t mask_right = ((len + shift) > 32) ? (bswap32(*++mask_ptr) >> (32 - shift)) : 0x00000000;
                 uint32_t mask = (mask_left & shift_mask) | (mask_right & ~shift_mask);
                 data = (bswap32(*frame_ptr) & ~mask) | (data & mask);
@@ -172,7 +174,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
                 
                 // Fetch data for next iteration
                 data_left = bswap32(*data_ptr) << shift;
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
                 // Fetch mask for next iteration
                 mask_left = bswap32(*mask_ptr) << shift;
 #endif
@@ -181,7 +183,7 @@ void HEBitmapDrawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
 
             frame_start += LCD_ROWSIZE;
             data_start += prv->rowbytes;
-#ifdef HEBITMAP_MASK
+#ifdef HE_BITMAP_MASK
             mask_start += prv->rowbytes;
 #endif
         }

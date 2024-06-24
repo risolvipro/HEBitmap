@@ -1,8 +1,8 @@
--- HEBitmap lua
+import "CoreLibs/object"
 
-local gfx = playdate.graphics
+local gfx <const> = playdate.graphics
 
-function hebitmap.bitmap:colorAt(x, y)
+function he.bitmap:colorAt(x, y)
     local color = self:_colorAt(x, y)
     if color == 1 then
        return gfx.kColorBlack
