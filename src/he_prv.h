@@ -11,6 +11,7 @@
 #include "he_api.h"
 #include "he_foundation.h"
 
+#if HE_LUA_BINDINGS
 #define lua_kBitmap "he.bitmap"
 #define lua_kBitmapTable "he.bitmaptable"
 #define lua_kSprite "he._sprite"
@@ -18,6 +19,7 @@
 #define lua_kSpriteCollision "he.spritecollision"
 #define lua_kGraphics "he.graphics"
 #define lua_kArray "he.array"
+#endif
 
 typedef struct {
     int x;
@@ -29,6 +31,7 @@ typedef struct {
     int length;
 } HEArray;
 
+#if HE_LUA_BINDINGS
 typedef enum {
     HELuaArrayItemCollision,
     HELuaArrayItemSprite
@@ -40,11 +43,14 @@ typedef struct {
     int itemSize;
     HELuaArrayItem type;
 } HELuaArray;
+#endif
 
+#if HE_LUA_BINDINGS
 typedef struct {
     LuaUDObject *ref;
     int refCount;
 } HELuaObject;
+#endif
 
 typedef struct HEGrid HEGrid;
 
@@ -93,14 +99,18 @@ typedef struct {
     int isOwner;
     int freeData;
     HEBitmapTable *bitmapTable;
+#if HE_LUA_BINDINGS
     LuaUDObject *luaTableRef;
     HELuaObject luaObject;
+#endif
 } _HEBitmap;
 
 typedef struct {
     HEBitmap **bitmaps;
     uint8_t *buffer;
+#if HE_LUA_BINDINGS
     HELuaObject luaObject;
+#endif
 } _HEBitmapTable;
 
 typedef struct {
@@ -159,17 +169,21 @@ void generic_array_clear(HEGenericArray *array);
 void generic_array_free_container(HEGenericArray *array);
 void generic_array_free(HEGenericArray *array);
 
+#if HE_LUA_BINDINGS
 HELuaObject lua_object_new(void);
 void gc_add(HELuaObject *luaObject);
 void gc_remove(HELuaObject *luaObject);
+#endif
 
 void bitmap_clip_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top, HERect clipRect);
 
 HEBitmap* HEBitmapAtIndex_1(HEBitmapTable *bitmapTable, int index);
 
+#if HE_LUA_BINDINGS
 HELuaArray* lua_array_new(void *items, int length, int itemSize, HELuaArrayItem type);
 uint8_t* lua_array_get(HELuaArray *array, int index);
 void lua_array_free(HELuaArray *luaArray);
+#endif
 
 HEGridItem* grid_item_new(void *ptr);
 void grid_item_free(HEGridItem *item);

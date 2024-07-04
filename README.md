@@ -9,7 +9,7 @@ HEBitmap (**H**igh **E**fficiency Bitmap) is a custom implementation of the draw
 
 This implementation is up to 2x faster than the SDK drawBitmap function, but native features (flip, stencil) are not supported.
 
-The library also provides an (optional) sprite system to efficiently move sprites and check collisions.
+The library also provides an optional sprite system to efficiently move sprites and check collisions.
 
 ## Benchmark
 
@@ -89,6 +89,18 @@ You can now build and run it as a Lua project.
 
 [Lua API Documentation](https://risolvipro.github.io/HEBitmap/Lua-API.html)
 
+## Sprite system
+
+The sprite system allows to efficiently move, check collisions and draw sprites. You can find two Lua examples in the repo.
+
+*Source/dino*
+
+<img src="assets/dino.gif" alt="Dino demo">
+
+*Source/survival*
+
+<img src="assets/survival.gif" alt="Survival demo">
+
 ## Encoder
 
 You can use the Python encoder to create heb/hebt files, supported inputs are:
@@ -102,8 +114,3 @@ You can use the Python encoder to create heb/hebt files, supported inputs are:
 
 ### Usage
 `python encoder.py -i <file_or_folder>`
-
-
-
-
-

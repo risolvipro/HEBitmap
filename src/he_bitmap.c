@@ -49,9 +49,11 @@ HEBitmap* HEBitmap_base(void)
     
     prv->data = NULL;
     prv->mask = NULL;
-    
+
+#if HE_LUA_BINDINGS
     prv->luaObject = lua_object_new();
     prv->luaTableRef = NULL;
+#endif
     
     return bitmap;
 }
@@ -348,11 +350,13 @@ void HEBitmap_free(HEBitmap *bitmap)
     
     if(!prv->isOwner)
     {
+#if HE_LUA_BINDINGS
         if(prv->bitmapTable)
         {
             _HEBitmapTable *_bitmapTable = prv->bitmapTable->prv;
             gc_remove(&_bitmapTable->luaObject);
         }
+#endif
         return;
     }
     
@@ -372,8 +376,9 @@ HEBitmapTable* HEBitmapTable_base(void)
     prv->buffer = NULL;
     prv->bitmaps = NULL;
     
+#if HE_LUA_BINDINGS
     prv->luaObject = lua_object_new();
-
+#endif
     return bitmapTable;
 }
 
@@ -516,8 +521,8 @@ HEBitmap* HEBitmap_atIndex(HEBitmapTable *bitmapTable, unsigned int index)
     if(index < bitmapTable->length)
     {
         HEBitmap *bitmap = prv->bitmaps[index];
+#if HE_LUA_BINDINGS
         _HEBitmap *_bitmap = bitmap->prv;
-        
         // check if table is a Lua object
         if(prv->luaObject.ref)
         {
@@ -527,8 +532,8 @@ HEBitmap* HEBitmap_atIndex(HEBitmapTable *bitmapTable, unsigned int index)
                 gc_add(&prv->luaObject);
             }
         }
-        
-        return prv->bitmaps[index];
+#endif
+        return bitmap;
     }
     
     return NULL;
@@ -658,6 +663,10 @@ static void get_bounds(uint8_t *mask, int rowbytes, int width, int height, int *
     *bx = min_x; *by = min_y; *bw = max_x - min_x; *bh = max_y - min_y;
 }
 
+#if HE_LUA_BINDINGS
+//
+// Lua bindings
+//
 static int lua_bitmapNew(lua_State *L)
 {
     const char *filename = playdate->lua->getArgString(1);
@@ -824,14 +833,17 @@ static const lua_reg lua_bitmapTable[] = {
     { "__gc", lua_bitmapTableFree },
     { NULL, NULL }
 };
+#endif
 
 void he_bitmap_init(PlaydateAPI *pd, int enableLua)
 {
     playdate = pd;
     
+#if HE_LUA_BINDINGS
     if(enableLua)
     {
         playdate->lua->registerClass(lua_kBitmap, lua_bitmap, NULL, 0, NULL);
         playdate->lua->registerClass(lua_kBitmapTable, lua_bitmapTable, NULL, 0, NULL);
     }
+#endif
 }

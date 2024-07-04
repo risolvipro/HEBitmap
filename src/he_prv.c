@@ -350,6 +350,7 @@ HEBitmap* HEBitmapAtIndex_1(HEBitmapTable *bitmapTable, int index)
     return NULL;
 }
 
+#if HE_LUA_BINDINGS
 //
 // Lua Array
 //
@@ -375,6 +376,7 @@ void lua_array_free(HELuaArray *luaArray)
     playdate->system->realloc(luaArray->items, 0);
     playdate->system->realloc(luaArray, 0);
 }
+#endif
 
 //
 // Grid
@@ -646,6 +648,7 @@ void grid_free(HEGrid *grid)
     playdate->system->realloc(grid, 0);
 }
 
+#if HE_LUA_BINDINGS
 //
 // Lua utils
 //
@@ -684,7 +687,9 @@ void gc_remove(HELuaObject *luaObject)
         }
     }
 }
+#endif
 
+#if HE_LUA_BINDINGS
 //
 // Lua bindings
 //
@@ -698,7 +703,7 @@ static int lua_reg_arrayIndex(lua_State *L)
     int i = playdate->lua->getArgInt(2);
     if(i > 0 && i <= luaArray->length)
     {
-#ifdef HE_SPRITE_MODULE
+#if HE_SPRITE_MODULE
         uint8_t *item = lua_array_get(luaArray, i - 1);
         
         switch(luaArray->type)
@@ -741,13 +746,16 @@ static const lua_reg lua_array[] = {
     { "__gc", lua_reg_arrayFree },
     { NULL, NULL }
 };
+#endif
 
 void he_prv_init(PlaydateAPI *pd, int enableLua)
 {
     playdate = pd;
     
+#if HE_LUA_BINDINGS
     if(enableLua)
     {
         playdate->lua->registerClass(lua_kArray, lua_array, NULL, 0, NULL);
     }
+#endif
 }

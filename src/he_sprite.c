@@ -301,18 +301,22 @@ static void HESprite_resetType(HESprite *sprite)
     prv->type = HESpriteTypeNone;
     prv->drawCallback = NULL;
     
+#if HE_LUA_BINDINGS
     if(prv->bitmap)
     {
         _HEBitmap *_bitmap = prv->bitmap->prv;
         gc_remove(&_bitmap->luaObject);
     }
+#endif
     prv->bitmap = NULL;
     
+#if HE_LUA_BINDINGS
     if(prv->tileBitmap)
     {
         _HEBitmap *_bitmap = prv->tileBitmap->prv;
         gc_remove(&_bitmap->luaObject);
     }
+#endif
     prv->tileBitmap = NULL;
 }
 
@@ -329,8 +333,6 @@ void HESprite_setBitmap(HESprite *sprite, HEBitmap *bitmap)
     
     if(bitmap)
     {
-        _HEBitmap *_bitmap = bitmap->prv;
-        
         prv->type = HESpriteTypeBitmap;
         prv->bitmap = bitmap;
         prv->width = bitmap->width;
@@ -339,7 +341,10 @@ void HESprite_setBitmap(HESprite *sprite, HEBitmap *bitmap)
         HESprite_updateCollisions(sprite);
         HESprite_updateVisibility(sprite);
         
+#if HE_LUA_BINDINGS
+        _HEBitmap *_bitmap = bitmap->prv;
         gc_add(&_bitmap->luaObject);
+#endif
     }
 }
 
@@ -351,12 +356,13 @@ void HESprite_setTileBitmap(HESprite *sprite, HEBitmap *bitmap)
     
     if(bitmap)
     {
-        _HEBitmap *_bitmap = bitmap->prv;
-        
         prv->type = HESpriteTypeTileBitmap;
         prv->tileBitmap = bitmap;
-        
+
+#if HE_LUA_BINDINGS
+        _HEBitmap *_bitmap = bitmap->prv;
         gc_add(&_bitmap->luaObject);
+#endif
     }
 }
 
@@ -794,17 +800,21 @@ void HESprite_free(HESprite *sprite)
     int index = array_index_of(sprites, sprite);
     _HESprite_remove(sprite, index, 0);
     
+#if HE_LUA_BINDINGS
     if(prv->bitmap)
     {
         _HEBitmap *_bitmap = prv->bitmap->prv;
         gc_remove(&_bitmap->luaObject);
     }
+#endif
     
+#if HE_LUA_BINDINGS
     if(prv->tileBitmap)
     {
         _HEBitmap *_bitmap = prv->tileBitmap->prv;
         gc_remove(&_bitmap->luaObject);
     }
+#endif
     
     grid_item_free(prv->collisionGridItem);
     grid_item_free(prv->visibilityGridItem);
@@ -1868,6 +1878,7 @@ void he_sprites_resizeGrid(float x, float y, float width, float height, float ce
     grid_resize(visibilityGrid, rect, cellSize);
 }
 
+#if HE_LUA_BINDINGS
 //
 // Lua bindings
 //
@@ -2533,6 +2544,7 @@ static const lua_val lua_spritePublicVal[] = {
     { "kClipRectAbsolute", kInt, { .intval = HESpriteClipRectAbsolute } },
     { NULL, kInt, { .intval = 0 } }
 };
+#endif
 
 void he_sprite_init(PlaydateAPI *pd, int enableLua)
 {
@@ -2550,10 +2562,12 @@ void he_sprite_init(PlaydateAPI *pd, int enableLua)
     collisionsGrid = grid_new(gridRect, 64);
     visibilityGrid = grid_new(gridRect, 64);
     
+#if HE_LUA_BINDINGS
     if(enableLua)
     {
         playdate->lua->registerClass(lua_kSprite, lua_sprite, NULL, 0, NULL);
         playdate->lua->registerClass(lua_kSpritePublic, lua_spritePublic, lua_spritePublicVal, 1, NULL);
         playdate->lua->registerClass(lua_kSpriteCollision, lua_spriteCollision, NULL, 0, NULL);
     }
+#endif
 }

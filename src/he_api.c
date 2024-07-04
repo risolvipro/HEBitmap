@@ -10,8 +10,6 @@
 
 static PlaydateAPI *playdate;
 
-#define HE_GFX_STACK_SIZE 1024
-
 static HEGraphicsContext gfx_stack[HE_GFX_STACK_SIZE] = {0};
 static int gfx_stack_index = 0;
 
@@ -50,6 +48,7 @@ void he_graphics_clearClipRect(void)
     he_graphics_context->clipRect = he_graphics_context->_clipRect;
 }
 
+#if HE_LUA_BINDINGS
 //
 // Lua bindings
 //
@@ -74,10 +73,11 @@ static const lua_reg lua_graphics[] = {
     { "clearClipRect", lua_clearClipRect },
     { NULL, NULL }
 };
+#endif
 
 // Forward declarations
 void he_bitmap_init(PlaydateAPI *pd, int enableLua);
-#ifdef HE_SPRITE_MODULE
+#if HE_SPRITE_MODULE
 void he_sprite_init(PlaydateAPI *pd, int enableLua);
 #endif
 void he_prv_init(PlaydateAPI *pd, int enableLua);
@@ -96,15 +96,17 @@ void he_library_init(PlaydateAPI *pd, int enableLua)
     
     he_graphics_clearClipRect();
     
+#if HE_LUA_BINDINGS
     if(enableLua)
     {
         playdate->lua->registerClass(lua_kGraphics, lua_graphics, NULL, 1, NULL);
     }
+#endif
     
     he_prv_init(pd, enableLua);
     
     he_bitmap_init(pd, enableLua);
-#ifdef HE_SPRITE_MODULE
+#if HE_SPRITE_MODULE
     he_sprite_init(pd, enableLua);
 #endif
 }
