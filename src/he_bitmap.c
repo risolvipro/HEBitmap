@@ -51,7 +51,7 @@ HEBitmap* HEBitmap_base(void)
     prv->mask = NULL;
 
 #if HE_LUA_BINDINGS
-    prv->luaObject = lua_object_new();
+    prv->luaObject = he_lua_object_new();
     prv->luaTableRef = NULL;
 #endif
     
@@ -354,7 +354,7 @@ void HEBitmap_free(HEBitmap *bitmap)
         if(prv->bitmapTable)
         {
             _HEBitmapTable *_bitmapTable = prv->bitmapTable->prv;
-            gc_remove(&_bitmapTable->luaObject);
+            he_gc_remove(&_bitmapTable->luaObject);
         }
 #endif
         return;
@@ -377,7 +377,7 @@ HEBitmapTable* HEBitmapTable_base(void)
     prv->bitmaps = NULL;
     
 #if HE_LUA_BINDINGS
-    prv->luaObject = lua_object_new();
+    prv->luaObject = he_lua_object_new();
 #endif
     return bitmapTable;
 }
@@ -529,7 +529,7 @@ HEBitmap* HEBitmap_atIndex(HEBitmapTable *bitmapTable, unsigned int index)
             if(!_bitmap->luaTableRef)
             {
                 _bitmap->luaTableRef = prv->luaObject.ref;
-                gc_add(&prv->luaObject);
+                he_gc_add(&prv->luaObject);
             }
         }
 #endif

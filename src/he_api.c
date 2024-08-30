@@ -38,8 +38,8 @@ void he_graphics_popContext(void)
 
 void he_graphics_setClipRect(int x, int y, int width, int height)
 {
-    he_graphics_context->_clipRect = rect_new(x, y, width, height);
-    he_graphics_context->clipRect = rect_intersection(gfx_screenRect, he_graphics_context->_clipRect);
+    he_graphics_context->_clipRect = he_rect_new(x, y, width, height);
+    he_graphics_context->clipRect = he_rect_intersection(gfx_screenRect, he_graphics_context->_clipRect);
 }
 
 void he_graphics_clearClipRect(void)

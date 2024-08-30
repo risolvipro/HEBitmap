@@ -31,7 +31,7 @@ void HEBitmap_drawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
     }
     
     unsigned int x1, y1, x2, y2, offset_left, offset_top;
-    bitmap_clip_bounds(bitmap, x, y, &x1, &y1, &x2, &y2, &offset_left, &offset_top, clipRect);
+    he_bitmap_clip_bounds(bitmap, x, y, &x1, &y1, &x2, &y2, &offset_left, &offset_top, clipRect);
     
     uint8_t *frame_start = playdate->graphics->getFrame() + y1 * LCD_ROWSIZE + x1 / 32 * 4;
     

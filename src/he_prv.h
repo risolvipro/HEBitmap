@@ -133,67 +133,67 @@ static const HERect gfx_screenRect = {
     .height = LCD_ROWS
 };
 
-HEVec2 vec2_new(float x, float y);
-HEVec2 vec2_zero(void);
-HEVec2i vec2i_new(int x, int y);
-HEVec2i vec2i_zero(void);
+HEVec2 he_vec2_new(float x, float y);
+HEVec2 he_vec2_zero(void);
+HEVec2i he_vec2i_new(int x, int y);
+HEVec2i he_vec2i_zero(void);
 
-HERect rect_new(int x, int y, int width, int height);
-HERect rect_zero(void);
-int rect_intersects(HERect rect1, HERect rect2);
-HERect rect_intersection(HERect clipRect, HERect rect);
-HERectF rectf_new(float x, float y, float width, float height);
-HERectF rectf_zero(void);
-HERectF rectf_from_rect(HERect rect);
-int rectf_equals(HERectF rect1, HERectF rect2);
-HERectF rectf_sum(HERectF rect1, HERectF rect2);
-HERectF rectf_max(HERectF rect1, HERectF rect2);
-int rectf_intersects(HERectF rect1, HERectF rect2);
-int rectf_contains(HERectF rect, float x, float y);
+HERect he_rect_new(int x, int y, int width, int height);
+HERect he_rect_zero(void);
+int he_rect_intersects(HERect rect1, HERect rect2);
+HERect he_rect_intersection(HERect clipRect, HERect rect);
+HERectF he_rectf_new(float x, float y, float width, float height);
+HERectF he_rectf_zero(void);
+HERectF he_rectf_from_rect(HERect rect);
+int he_rectf_equals(HERectF rect1, HERectF rect2);
+HERectF he_rectf_sum(HERectF rect1, HERectF rect2);
+HERectF he_rectf_max(HERectF rect1, HERectF rect2);
+int he_rectf_intersects(HERectF rect1, HERectF rect2);
+int he_rectf_contains(HERectF rect, float x, float y);
 
-HEVec2 rectf_center(HERectF rect);
-int point_in_corner(HEVec2 point, HERectF rect, int cornerIndex, float cornerSize);
+HEVec2 he_rectf_center(HERectF rect);
+int he_point_in_corner(HEVec2 point, HERectF rect, int cornerIndex, float cornerSize);
 
-HEArray* array_new(void);
-void array_push(HEArray *array, void *item);
-void array_remove(HEArray *array, int index);
-int array_index_of(HEArray *array, void *item);
-void array_clear(HEArray *array);
-void array_free_container(HEArray *array);
-void array_free(HEArray *array);
+HEArray* he_array_new(void);
+void he_array_push(HEArray *array, void *item);
+void he_array_remove(HEArray *array, int index);
+int he_array_index_of(HEArray *array, void *item);
+void he_array_clear(HEArray *array);
+void he_array_free_container(HEArray *array);
+void he_array_free(HEArray *array);
 
-HEGenericArray* generic_array_new(int itemSize);
-uint8_t* generic_array_get(HEGenericArray *array, int index);
-uint8_t* generic_array_push(HEGenericArray *array, void *item);
-void generic_array_clear(HEGenericArray *array);
-void generic_array_free_container(HEGenericArray *array);
-void generic_array_free(HEGenericArray *array);
+HEGenericArray* he_generic_array_new(int itemSize);
+uint8_t* he_generic_array_get(HEGenericArray *array, int index);
+uint8_t* he_generic_array_push(HEGenericArray *array, void *item);
+void he_generic_array_clear(HEGenericArray *array);
+void he_generic_array_free_container(HEGenericArray *array);
+void he_generic_array_free(HEGenericArray *array);
 
 #if HE_LUA_BINDINGS
-HELuaObject lua_object_new(void);
-void gc_add(HELuaObject *luaObject);
-void gc_remove(HELuaObject *luaObject);
+HELuaObject he_lua_object_new(void);
+void he_gc_add(HELuaObject *luaObject);
+void he_gc_remove(HELuaObject *luaObject);
 #endif
 
-void bitmap_clip_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top, HERect clipRect);
+void he_bitmap_clip_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top, HERect clipRect);
 
 HEBitmap* HEBitmapAtIndex_1(HEBitmapTable *bitmapTable, int index);
 
 #if HE_LUA_BINDINGS
-HELuaArray* lua_array_new(void *items, int length, int itemSize, HELuaArrayItem type);
-uint8_t* lua_array_get(HELuaArray *array, int index);
-void lua_array_free(HELuaArray *luaArray);
+HELuaArray* he_lua_array_new(void *items, int length, int itemSize, HELuaArrayItem type);
+uint8_t* he_lua_array_get(HELuaArray *array, int index);
+void he_lua_array_free(HELuaArray *luaArray);
 #endif
 
-HEGridItem* grid_item_new(void *ptr);
-void grid_item_free(HEGridItem *item);
+HEGridItem* he_grid_item_new(void *ptr);
+void he_grid_item_free(HEGridItem *item);
 
-HEGrid* grid_new(HERectF rect, float size);
-void grid_add(HEGrid *grid, HEGridItem *item, HERectF rect);
-void grid_remove(HEGridItem *item);
-void grid_query(HEGrid *grid, HERectF rect, HEGridItem **items, int *count);
-void grid_resize(HEGrid *grid, HERectF rect, float size);
-void grid_free(HEGrid *grid);
+HEGrid* he_grid_new(HERectF rect, float size);
+void he_grid_add(HEGrid *grid, HEGridItem *item, HERectF rect);
+void he_grid_remove(HEGridItem *item);
+void he_grid_query(HEGrid *grid, HERectF rect, HEGridItem **items, int *count);
+void he_grid_resize(HEGrid *grid, HERectF rect, float size);
+void he_grid_free(HEGrid *grid);
 
 static inline int he_min(const int a, const int b)
 {
@@ -205,7 +205,7 @@ static inline int he_max(const int a, const int b)
     return a > b ? a : b;
 }
 
-static inline int signf(float d)
+static inline int he_signf(float d)
 {
     if(d > 0)
     {
@@ -218,7 +218,7 @@ static inline int signf(float d)
     return 0;
 }
 
-static inline int nsign(int sign)
+static inline int he_nsign(int sign)
 {
     if(sign != 0)
     {

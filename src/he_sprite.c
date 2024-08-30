@@ -156,20 +156,20 @@ HESprite* HESprite_new(void)
     prv->type = HESpriteTypeNone;
     prv->bitmap = NULL;
     prv->tileBitmap = NULL;
-    prv->tileOffset = vec2i_zero();
-    prv->position = vec2_zero();
+    prv->tileOffset = he_vec2i_zero();
+    prv->position = he_vec2_zero();
     prv->width = 0;
     prv->height = 0;
-    prv->centerAnchor = vec2_new(0.5, 0.5);
-    prv->collisionInnerRect = rectf_zero();
+    prv->centerAnchor = he_vec2_new(0.5, 0.5);
+    prv->collisionInnerRect = he_rectf_zero();
     prv->hasCollisionInnerRect = 0;
-    prv->lastCollisionRect = rectf_zero();
+    prv->lastCollisionRect = he_rectf_zero();
     prv->hasLastCollisionRect = 0;
     prv->visible = 1;
     prv->z_index = 0;
     prv->ignoresDrawOffset = 0;
     prv->ignoresScreenClipRect = 0;
-    prv->clipRect = rect_zero();
+    prv->clipRect = he_rect_zero();
     prv->hasClipRect = 0;
     prv->clipRectReference = HESpriteClipRectRelative;
     
@@ -185,21 +185,21 @@ HESprite* HESprite_new(void)
         .velocity = 0,
         .refreshRate = 0,
         .refreshElapsedTime = 0,
-        .oldPosition = vec2_zero(),
+        .oldPosition = he_vec2_zero(),
         .hasOldPosition = 0,
-        .offset = vec2_zero()
+        .offset = he_vec2_zero()
     };
     prv->fastCollisions = 0;
     
-    prv->collisionInstance.rect = rectf_zero();
-    prv->collisionInstance.lastRect = rectf_zero();
-    prv->collisionInstance.center = vec2_zero();
-    prv->collisionInstance.lastCenter = vec2_zero();
+    prv->collisionInstance.rect = he_rectf_zero();
+    prv->collisionInstance.lastRect = he_rectf_zero();
+    prv->collisionInstance.center = he_vec2_zero();
+    prv->collisionInstance.lastCenter = he_vec2_zero();
 
-    prv->screenRect = rect_zero();
-    prv->screenClipRect = rect_zero();
-    prv->collisionGridItem = grid_item_new(sprite);
-    prv->visibilityGridItem = grid_item_new(sprite);
+    prv->screenRect = he_rect_zero();
+    prv->screenClipRect = he_rect_zero();
+    prv->collisionGridItem = he_grid_item_new(sprite);
+    prv->visibilityGridItem = he_grid_item_new(sprite);
     prv->added = 0;
     prv->moving = 0;
     prv->updateCallback = NULL;
@@ -214,10 +214,10 @@ HESprite* HESprite_new(void)
 int HESprite_add_ret(HESprite *sprite)
 {
     _HESprite *prv = sprite->prv;
-    if(array_index_of(sprites, sprite) < 0)
+    if(he_array_index_of(sprites, sprite) < 0)
     {
         int index = sprites->length;
-        array_push(sprites, sprite);
+        he_array_push(sprites, sprite);
         prv->added = 1;
         prv->index = index;
         
@@ -246,16 +246,16 @@ static void _HESprite_remove(HESprite *sprite, int index, int all)
         remove_collision_pairs(sprite);
         HESprite_unfollow(sprite);
         
-        int moving_index = array_index_of(movingSprites, sprite);
+        int moving_index = he_array_index_of(movingSprites, sprite);
         if(moving_index >= 0)
         {
-            array_remove(movingSprites, moving_index);
+            he_array_remove(movingSprites, moving_index);
         }
         
-        int visible_index = array_index_of(visibleSprites, sprite);
+        int visible_index = he_array_index_of(visibleSprites, sprite);
         if(visible_index >= 0)
         {
-            array_remove(visibleSprites, visible_index);
+            he_array_remove(visibleSprites, visible_index);
         }
         
         for(int i = 0; i < sprites->length; i++)
@@ -274,7 +274,7 @@ static void _HESprite_remove(HESprite *sprite, int index, int all)
         
         if(index >= 0)
         {
-            array_remove(sprites, index);
+            he_array_remove(sprites, index);
         }
     }
     
@@ -285,7 +285,7 @@ static void _HESprite_remove(HESprite *sprite, int index, int all)
 
 int HESprite_remove_ret(HESprite *sprite)
 {
-    int index = array_index_of(sprites, sprite);
+    int index = he_array_index_of(sprites, sprite);
     _HESprite_remove(sprite, index, 0);
     return index;
 }
@@ -305,7 +305,7 @@ static void HESprite_resetType(HESprite *sprite)
     if(prv->bitmap)
     {
         _HEBitmap *_bitmap = prv->bitmap->prv;
-        gc_remove(&_bitmap->luaObject);
+        he_gc_remove(&_bitmap->luaObject);
     }
 #endif
     prv->bitmap = NULL;
@@ -314,7 +314,7 @@ static void HESprite_resetType(HESprite *sprite)
     if(prv->tileBitmap)
     {
         _HEBitmap *_bitmap = prv->tileBitmap->prv;
-        gc_remove(&_bitmap->luaObject);
+        he_gc_remove(&_bitmap->luaObject);
     }
 #endif
     prv->tileBitmap = NULL;
@@ -343,7 +343,7 @@ void HESprite_setBitmap(HESprite *sprite, HEBitmap *bitmap)
         
 #if HE_LUA_BINDINGS
         _HEBitmap *_bitmap = bitmap->prv;
-        gc_add(&_bitmap->luaObject);
+        he_gc_add(&_bitmap->luaObject);
 #endif
     }
 }
@@ -361,7 +361,7 @@ void HESprite_setTileBitmap(HESprite *sprite, HEBitmap *bitmap)
 
 #if HE_LUA_BINDINGS
         _HEBitmap *_bitmap = bitmap->prv;
-        gc_add(&_bitmap->luaObject);
+        he_gc_add(&_bitmap->luaObject);
 #endif
     }
 }
@@ -462,7 +462,7 @@ void HESprite_clearCollisionRect(HESprite *sprite)
 {
     _HESprite *prv = sprite->prv;
     prv->hasCollisionInnerRect = 0;
-    prv->collisionInnerRect = rectf_zero();
+    prv->collisionInnerRect = he_rectf_zero();
     HESprite_updateCollisions(sprite);
 }
 
@@ -481,7 +481,7 @@ int HESprite_isVisible(HESprite *sprite)
 
 int HESprite_isVisibleOnScreen(HESprite *sprite)
 {
-    int index = array_index_of(visibleSprites, sprite);
+    int index = he_array_index_of(visibleSprites, sprite);
     return (index >= 0);
 }
 
@@ -504,7 +504,7 @@ void HESprite_willMove(HESprite *sprite)
         if(!prv->moving)
         {
             prv->moving = 1;
-            array_push(movingSprites, sprite);
+            he_array_push(movingSprites, sprite);
         }
     }
 }
@@ -521,15 +521,15 @@ static void HESprite_collisionsGridAdd(HESprite *sprite)
     HERectF rectMax = HESprite_measureCollisionRect(sprite);
     if(prv->hasLastCollisionRect)
     {
-        rectMax = rectf_max(rectMax, prv->lastCollisionRect);
+        rectMax = he_rectf_max(rectMax, prv->lastCollisionRect);
     }
-    grid_add(collisionsGrid, prv->collisionGridItem, rectMax);
+    he_grid_add(collisionsGrid, prv->collisionGridItem, rectMax);
 }
 
 static void HESprite_collisionsGridRemove(HESprite *sprite)
 {
     _HESprite *prv = sprite->prv;
-    grid_remove(prv->collisionGridItem);
+    he_grid_remove(prv->collisionGridItem);
 }
 
 static void HESprite_updateCollisions(HESprite *sprite)
@@ -554,13 +554,13 @@ static void HESprite_visibilityGridAdd(HESprite *sprite)
     _HESprite *prv = sprite->prv;
     HERectF rect = HESprite_measureRect(sprite);
     prv->visibilityGridItem->fixed = prv->ignoresDrawOffset;
-    grid_add(visibilityGrid, prv->visibilityGridItem, rect);
+    he_grid_add(visibilityGrid, prv->visibilityGridItem, rect);
 }
 
 static void HESprite_visibilityGridRemove(HESprite *sprite)
 {
     _HESprite *prv = sprite->prv;
-    grid_remove(prv->visibilityGridItem);
+    he_grid_remove(prv->visibilityGridItem);
 }
 
 static void HESprite_updateVisibility(HESprite *sprite)
@@ -603,10 +603,10 @@ void HESprite_unfollow(HESprite *sprite)
 {
     _HESprite *_sprite = sprite->prv;
     _sprite->follow.target = NULL;
-    int index = array_index_of(followSprites, sprite);
+    int index = he_array_index_of(followSprites, sprite);
     if(index >= 0)
     {
-        array_remove(followSprites, index);
+        he_array_remove(followSprites, index);
     }
 }
 
@@ -619,7 +619,7 @@ void HESprite_setFollowTarget(HESprite *sprite, HESprite *target)
     _sprite->follow.target = target;
     if(target)
     {
-        array_push(followSprites, sprite);
+        he_array_push(followSprites, sprite);
     }
 }
 
@@ -671,7 +671,7 @@ HEVec2 HESprite_getPosition(HESprite *sprite)
 HEVec2 HESprite_getCenterPosition(HESprite *sprite)
 {
     _HESprite *prv = sprite->prv;
-    return vec2_new(prv->position.x - prv->width * prv->centerAnchor.x + prv->width * 0.5f, prv->position.y - prv->height * prv->centerAnchor.y + prv->height * 0.5f);
+    return he_vec2_new(prv->position.x - prv->width * prv->centerAnchor.x + prv->width * 0.5f, prv->position.y - prv->height * prv->centerAnchor.y + prv->height * 0.5f);
 }
 
 void HESprite_getSize(HESprite *sprite, float *width, float *height)
@@ -685,13 +685,13 @@ HESpriteCollision* HESprite_checkCollisions(HESprite *sprite, int *len)
 {
     _HESprite *_sprite = sprite->prv;
     
-    HEGenericArray *results = generic_array_new(sizeof(HESpriteCollision));
+    HEGenericArray *results = he_generic_array_new(sizeof(HESpriteCollision));
     
     HESpriteCollisionInstance *c1 = &_sprite->collisionInstance;
     HESprite_updateCollisionInstance(sprite);
     
     int count;
-    grid_query(collisionsGrid, c1->rect, grid_query_results, &count);
+    he_grid_query(collisionsGrid, c1->rect, grid_query_results, &count);
     
     for(int i = 0; i < count; i++)
     {
@@ -713,7 +713,7 @@ HESpriteCollision* HESprite_checkCollisions(HESprite *sprite, int *len)
         HESprite_updateCollisionInstance(sprite2);
         HESpriteCollisionInstance *c2 = &_sprite2->collisionInstance;
         
-        if(rectf_intersects(c1->rect, c2->rect))
+        if(he_rectf_intersects(c1->rect, c2->rect))
         {
             resolveMinimumDisplacement(type, sprite, sprite2, 0, results);
         }
@@ -721,7 +721,7 @@ HESpriteCollision* HESprite_checkCollisions(HESprite *sprite, int *len)
     
     HESpriteCollision *collisions = (HESpriteCollision*)results->items;
     *len = results->length;
-    generic_array_free_container(results);
+    he_generic_array_free_container(results);
     return collisions;
 }
 
@@ -797,14 +797,14 @@ void HESprite_free(HESprite *sprite)
 {
     _HESprite *prv = sprite->prv;
     
-    int index = array_index_of(sprites, sprite);
+    int index = he_array_index_of(sprites, sprite);
     _HESprite_remove(sprite, index, 0);
     
 #if HE_LUA_BINDINGS
     if(prv->bitmap)
     {
         _HEBitmap *_bitmap = prv->bitmap->prv;
-        gc_remove(&_bitmap->luaObject);
+        he_gc_remove(&_bitmap->luaObject);
     }
 #endif
     
@@ -812,12 +812,12 @@ void HESprite_free(HESprite *sprite)
     if(prv->tileBitmap)
     {
         _HEBitmap *_bitmap = prv->tileBitmap->prv;
-        gc_remove(&_bitmap->luaObject);
+        he_gc_remove(&_bitmap->luaObject);
     }
 #endif
     
-    grid_item_free(prv->collisionGridItem);
-    grid_item_free(prv->visibilityGridItem);
+    he_grid_item_free(prv->collisionGridItem);
+    he_grid_item_free(prv->visibilityGridItem);
 
     playdate->system->realloc(prv, 0);
     playdate->system->realloc(sprite, 0);
@@ -831,7 +831,7 @@ void he_sprites_setDrawOffset(int dx, int dy)
 
 void HESprite_setScreenClipRect(int x, int y, int width, int height)
 {
-    gfx_spriteScreenClipRect = rect_intersection(gfx_screenRect, rect_new(x, y, width, height));
+    gfx_spriteScreenClipRect = he_rect_intersection(gfx_screenRect, he_rect_new(x, y, width, height));
 }
 
 void HESprite_clearScreenClipRect(void)
@@ -847,8 +847,8 @@ HESprite** he_sprites_getAll(int *len)
 
 void he_sprites_removeAll(void)
 {
-    array_clear(movingSprites);
-    array_clear(followSprites);
+    he_array_clear(movingSprites);
+    he_array_clear(followSprites);
     
     clearVisibleSprites();
     clearSpriteCollisions();
@@ -860,7 +860,7 @@ void he_sprites_removeAll(void)
         HESprite *sprite = sprites->items[i];
         _HESprite_remove(sprite, i, 1);
     }
-    array_clear(sprites);
+    he_array_clear(sprites);
 }
 
 HESpriteCollision* he_sprites_getCollisions(int *len)
@@ -871,12 +871,12 @@ HESpriteCollision* he_sprites_getCollisions(int *len)
 
 HESprite** he_sprites_queryWithRect(float x, float y, float width, float height, int *len)
 {
-    HERectF rect = rectf_new(x, y, width, height);
+    HERectF rect = he_rectf_new(x, y, width, height);
     
-    HEArray *array = array_new();
+    HEArray *array = he_array_new();
     
     int count;
-    grid_query(collisionsGrid, rect, grid_query_results, &count);
+    he_grid_query(collisionsGrid, rect, grid_query_results, &count);
     
     for(int i = 0; i < count; i++)
     {
@@ -884,21 +884,21 @@ HESprite** he_sprites_queryWithRect(float x, float y, float width, float height,
         HESprite *sprite = item->ptr;
         
         HERectF spriteRect = HESprite_measureCollisionRect(sprite);
-        if(rectf_intersects(rect, spriteRect))
+        if(he_rectf_intersects(rect, spriteRect))
         {
-            array_push(array, sprite);
+            he_array_push(array, sprite);
         }
     }
     
     HESprite **items = (HESprite**)array->items;
     *len = array->length;
-    array_free_container(array);
+    he_array_free_container(array);
     return items;
 }
 
 HESprite** he_sprites_queryWithSegment(float x1, float y1, float x2, float y2, int *len)
 {
-    HEArray *array = array_new();
+    HEArray *array = he_array_new();
     
     float x_min = fminf(x1, x2);
     float x_max = fmaxf(x1, x2);
@@ -906,10 +906,10 @@ HESprite** he_sprites_queryWithSegment(float x1, float y1, float x2, float y2, i
     float y_min = fminf(y1, y2);
     float y_max = fmaxf(y1, y2);
     
-    HERectF rect = rectf_new(x_min, y_min, x_max - x_min, y_max - y_min);
+    HERectF rect = he_rectf_new(x_min, y_min, x_max - x_min, y_max - y_min);
     
     int count;
-    grid_query(collisionsGrid, rect, grid_query_results, &count);
+    he_grid_query(collisionsGrid, rect, grid_query_results, &count);
     
     for(int i = 0; i < count; i++)
     {
@@ -923,24 +923,24 @@ HESprite** he_sprites_queryWithSegment(float x1, float y1, float x2, float y2, i
         
         if(intersect && t1 > 0 && t2 < 1)
         {
-            array_push(array, sprite);
+            he_array_push(array, sprite);
         }
     }
     
     HESprite **items = (HESprite**)array->items;
     *len = array->length;
-    array_free_container(array);
+    he_array_free_container(array);
     return items;
 }
 
 HESprite** he_sprites_queryWithPoint(float x, float y, int *len)
 {
-    HEArray *array = array_new();
+    HEArray *array = he_array_new();
 
-    HERectF rect = rectf_new(x, y, 0, 0);
+    HERectF rect = he_rectf_new(x, y, 0, 0);
     
     int count;
-    grid_query(collisionsGrid, rect, grid_query_results, &count);
+    he_grid_query(collisionsGrid, rect, grid_query_results, &count);
     
     for(int i = 0; i < count; i++)
     {
@@ -948,15 +948,15 @@ HESprite** he_sprites_queryWithPoint(float x, float y, int *len)
         HESprite *sprite = item->ptr;
         
         HERectF spriteRect = HESprite_measureCollisionRect(sprite);
-        if(rectf_contains(spriteRect, x, y))
+        if(he_rectf_contains(spriteRect, x, y))
         {
-            array_push(array, sprite);
+            he_array_push(array, sprite);
         }
     }
     
     HESprite **items = (HESprite**)array->items;
     *len = array->length;
-    array_free_container(array);
+    he_array_free_container(array);
     return items;
 }
 
@@ -991,7 +991,7 @@ static HERectF HESprite_measureRect(HESprite *sprite)
     float x = prv->position.x - prv->width * prv->centerAnchor.x;
     float y = prv->position.y - prv->height * prv->centerAnchor.y;
     
-    return rectf_new(x, y, prv->width, prv->height);
+    return he_rectf_new(x, y, prv->width, prv->height);
 }
 
 static HERectF HESprite_measureCollisionRect(HESprite *sprite)
@@ -1022,7 +1022,7 @@ static HERect HESprite_measureScreenRect(HESprite *sprite)
         rect.x += gfx_spriteDrawOffset.x;
         rect.y += gfx_spriteDrawOffset.y;
     }
-    return rect_new(roundf(rect.x), roundf(rect.y), ceilf(rect.width), ceilf(rect.height));
+    return he_rect_new(roundf(rect.x), roundf(rect.y), ceilf(rect.width), ceilf(rect.height));
 }
 
 static HERect HESprite_measureClipRect(HESprite *sprite)
@@ -1036,13 +1036,13 @@ static HERect HESprite_measureClipRect(HESprite *sprite)
     if(prv->hasClipRect)
     {
         HERect spriteRect = HESprite_measureScreenRect(sprite);
-        HERect clipRect = rect_new(prv->clipRect.x, prv->clipRect.x, prv->clipRect.width, prv->clipRect.height);
+        HERect clipRect = he_rect_new(prv->clipRect.x, prv->clipRect.x, prv->clipRect.width, prv->clipRect.height);
         if(prv->clipRectReference == HESpriteClipRectRelative)
         {
             clipRect.x += spriteRect.x;
             clipRect.y += spriteRect.y;
         }
-        rect = rect_intersection(rect, clipRect);
+        rect = he_rect_intersection(rect, clipRect);
     }
     return rect;
 }
@@ -1076,9 +1076,9 @@ static void HESprite_updateCollisionInstance(HESprite *sprite)
         lastRect = prv->lastCollisionRect;
     }
     prv->collisionInstance.rect = rect;
-    prv->collisionInstance.center = rectf_center(rect);
+    prv->collisionInstance.center = he_rectf_center(rect);
     prv->collisionInstance.lastRect = lastRect;
-    prv->collisionInstance.lastCenter = rectf_center(lastRect);
+    prv->collisionInstance.lastCenter = he_rectf_center(lastRect);
 }
 
 static HESpriteCollisionType collisionTypeForSprites(HESprite *sprite1, HESprite *sprite2)
@@ -1115,14 +1115,14 @@ void HESprite_setClipRect(HESprite *sprite, int x, int y, int width, int height)
 {
     _HESprite *prv = sprite->prv;
     prv->hasClipRect = 1;
-    prv->clipRect = rect_new(x, y, width, height);
+    prv->clipRect = he_rect_new(x, y, width, height);
 }
 
 void HESprite_clearClipRect(HESprite *sprite)
 {
     _HESprite *prv = sprite->prv;
     prv->hasClipRect = 0;
-    prv->clipRect = rect_zero();
+    prv->clipRect = he_rect_zero();
 }
 
 void HESprite_setClipRectReference(HESprite *sprite, HESpriteClipRectReference reference)
@@ -1250,12 +1250,12 @@ static void clear_collision_pairs(void)
 
 static void clearSpriteCollisions(void)
 {
-    generic_array_clear(spriteCollisions);
+    he_generic_array_clear(spriteCollisions);
 }
 
 static void clearVisibleSprites(void)
 {
-    array_clear(visibleSprites);
+    he_array_clear(visibleSprites);
 }
 
 //
@@ -1369,18 +1369,18 @@ static void resolveSpriteCollision(HESpriteCollisionType type, HESprite *sprite1
     HESpriteCollisionInstance *c2 = &_sprite2->collisionInstance;
     
     HEVec2 goal = c1->center;
-    HEVec2 normal = vec2_new(nx1, ny1);
-    HEVec2 move = vec2_new(c1->center.x - c1->lastCenter.x, c1->center.y - c1->lastCenter.y);
-    HEVec2 touch = vec2_new(c1->center.x + dx, c1->center.y + dy);
+    HEVec2 normal = he_vec2_new(nx1, ny1);
+    HEVec2 move = he_vec2_new(c1->center.x - c1->lastCenter.x, c1->center.y - c1->lastCenter.y);
+    HEVec2 touch = he_vec2_new(c1->center.x + dx, c1->center.y + dy);
     
     // Goal (relative to sprite)
-    HEVec2 spriteGoal = vec2_new(c1->rect.x - _sprite1->collisionInnerRect.x + c1->rect.width * _sprite1->centerAnchor.x, c1->rect.y - _sprite1->collisionInnerRect.y + c1->rect.height * _sprite1->centerAnchor.y);
+    HEVec2 spriteGoal = he_vec2_new(c1->rect.x - _sprite1->collisionInnerRect.x + c1->rect.width * _sprite1->centerAnchor.x, c1->rect.y - _sprite1->collisionInnerRect.y + c1->rect.height * _sprite1->centerAnchor.y);
     
     // Touch (relative to sprite)
-    HEVec2 spriteTouch = vec2_new(c1->rect.x + dx - _sprite1->collisionInnerRect.x + c1->rect.width * _sprite1->centerAnchor.x, c1->rect.y + dy - _sprite1->collisionInnerRect.y + c1->rect.height * _sprite1->centerAnchor.y);
+    HEVec2 spriteTouch = he_vec2_new(c1->rect.x + dx - _sprite1->collisionInnerRect.x + c1->rect.width * _sprite1->centerAnchor.x, c1->rect.y + dy - _sprite1->collisionInnerRect.y + c1->rect.height * _sprite1->centerAnchor.y);
     
-    HERectF touchRect = rectf_new(touch.x - c1->rect.width * 0.5f - _sprite1->collisionInnerRect.x, touch.y - c1->rect.height * 0.5f - _sprite1->collisionInnerRect.y, _sprite1->width, _sprite1->height);
-    HERectF touchOtherRect = rectf_new(c2->lastRect.x - _sprite2->collisionInnerRect.x, c2->lastRect.y - _sprite2->collisionInnerRect.y, _sprite2->width, _sprite2->height);
+    HERectF touchRect = he_rectf_new(touch.x - c1->rect.width * 0.5f - _sprite1->collisionInnerRect.x, touch.y - c1->rect.height * 0.5f - _sprite1->collisionInnerRect.y, _sprite1->width, _sprite1->height);
+    HERectF touchOtherRect = he_rectf_new(c2->lastRect.x - _sprite2->collisionInnerRect.x, c2->lastRect.y - _sprite2->collisionInnerRect.y, _sprite2->width, _sprite2->height);
     
     HEVec2 destination = touch;
     
@@ -1428,7 +1428,7 @@ static void resolveSpriteCollision(HESpriteCollisionType type, HESprite *sprite1
             else if(nx2 < 0){ cornerIndex = 1; }
         }
         
-        if(point_in_corner(cornerPoint, c2->lastRect, cornerIndex, cornerTolerance))
+        if(he_point_in_corner(cornerPoint, c2->lastRect, cornerIndex, cornerTolerance))
         {
             return;
         }
@@ -1485,7 +1485,7 @@ static void resolveSpriteCollision(HESpriteCollisionType type, HESprite *sprite1
         HESprite_updateCollisionInstance(sprite1);
     }
 
-    HESpriteCollision *collision = (HESpriteCollision*)generic_array_push(results, NULL);
+    HESpriteCollision *collision = (HESpriteCollision*)he_generic_array_push(results, NULL);
     
     collision->type = type;
     collision->sprite = sprite1;
@@ -1538,16 +1538,16 @@ static void resolveMinimumDisplacement(HESpriteCollisionType type, HESprite *spr
     if(fabsf(max_dx) < fabsf(max_dy))
     {
         dx = max_dx;
-        int nx_sign = signf(max_dx);
+        int nx_sign = he_signf(max_dx);
         nx1 = nx_sign;
-        nx2 = nsign(nx_sign);
+        nx2 = he_nsign(nx_sign);
     }
     else
     {
         dy = max_dy;
-        int ny_sign = signf(max_dy);
+        int ny_sign = he_signf(max_dy);
         ny1 = ny_sign;
-        ny2 = nsign(ny_sign);
+        ny2 = he_nsign(ny_sign);
     }
     
     resolveSpriteCollision(type, sprite1, sprite2, dx, dy, nx1, ny1, nx2, ny2, 1, resolve, results);
@@ -1636,10 +1636,10 @@ void he_sprites_move(float deltaTime)
         HESprite_updateCollisionInstance(sprite1);
         HESpriteCollisionInstance *c1 = &_sprite1->collisionInstance;
         
-        HERectF queryRect = rectf_max(c1->lastRect, c1->rect);
+        HERectF queryRect = he_rectf_max(c1->lastRect, c1->rect);
         
         int count;
-        grid_query(collisionsGrid, queryRect, grid_default_results, &count);
+        he_grid_query(collisionsGrid, queryRect, grid_default_results, &count);
         
         for(int j = 0; j < count; j++)
         {
@@ -1663,7 +1663,7 @@ void he_sprites_move(float deltaTime)
             
             if(_sprite1->fastCollisions || _sprite2->fastCollisions)
             {
-                if(rectf_intersects(c1->rect, c2->lastRect))
+                if(he_rectf_intersects(c1->rect, c2->lastRect))
                 {
                     resolveMinimumDisplacement(type, sprite1, sprite2, 1, spriteCollisions);
                 }
@@ -1673,16 +1673,16 @@ void he_sprites_move(float deltaTime)
             float vx = c1->center.x - c1->lastCenter.x;
             float vy = c1->center.y - c1->lastCenter.y;
             
-            if(rectf_intersects(c1->rect, c2->lastRect))
+            if(he_rectf_intersects(c1->rect, c2->lastRect))
             {
                 // Intersection at current position
                 
-                if(!rectf_intersects(c1->lastRect, c2->lastRect) && (vx != 0 || vy != 0))
+                if(!he_rectf_intersects(c1->lastRect, c2->lastRect) && (vx != 0 || vy != 0))
                 {
                     // 1. Not intersecting in the last position
                     // 2. Is moving
                     
-                    HERectF rect_sum = rectf_sum(c2->lastRect, c1->rect);
+                    HERectF rect_sum = he_rectf_sum(c2->lastRect, c1->rect);
                     
                     float t1; float t2; float nx1; float ny1; float nx2; float ny2;
                     int intersect = segment_rect_intersection(c1->lastCenter.x, c1->lastCenter.y, c1->center.x, c1->center.y, rect_sum, &t1, &t2, &nx1, &ny1, &nx2, &ny2);
@@ -1705,7 +1705,7 @@ void he_sprites_move(float deltaTime)
             {
                 // Check for tunneling
                 
-                HERectF rect_sum = rectf_sum(c2->lastRect, c1->rect);
+                HERectF rect_sum = he_rectf_sum(c2->lastRect, c1->rect);
                 
                 float t1; float t2; float nx1; float ny1; float nx2; float ny2;
                 int intersect = segment_rect_intersection(c1->lastCenter.x, c1->lastCenter.y, c1->center.x, c1->center.y, rect_sum, &t1, &t2, &nx1, &ny1, &nx2, &ny2);
@@ -1723,7 +1723,7 @@ void he_sprites_move(float deltaTime)
         HESprite_resetMotion(sprite1);
     }
     
-    array_clear(movingSprites);
+    he_array_clear(movingSprites);
 }
 
 void he_sprites_update(void)
@@ -1734,10 +1734,10 @@ void he_sprites_update(void)
     adjustedScreenRect.x -= gfx_spriteDrawOffset.x;
     adjustedScreenRect.y -= gfx_spriteDrawOffset.y;
 
-    HERectF queryRect = rectf_from_rect(adjustedScreenRect);
+    HERectF queryRect = he_rectf_from_rect(adjustedScreenRect);
     
     int count;
-    grid_query(visibilityGrid, queryRect, grid_default_results, &count);
+    he_grid_query(visibilityGrid, queryRect, grid_default_results, &count);
     
     for(int i = 0; i < count; i++)
     {
@@ -1752,7 +1752,7 @@ void he_sprites_update(void)
         }
         HERect clipRect = HESprite_measureClipRect(sprite);
         
-        if(rect_intersects(screenClip, clipRect))
+        if(he_rect_intersects(screenClip, clipRect))
         {
             if(prv->updateCallback)
             {
@@ -1768,11 +1768,11 @@ void he_sprites_update(void)
             
             HERect clipRect2 = HESprite_measureClipRect(sprite);
             
-            if(rect_intersects(screenClip, clipRect2))
+            if(he_rect_intersects(screenClip, clipRect2))
             {
                 prv->screenRect = HESprite_measureScreenRect(sprite);
                 prv->screenClipRect = clipRect2;
-                array_push(visibleSprites, sprite);
+                he_array_push(visibleSprites, sprite);
             }
         }
     }
@@ -1804,7 +1804,7 @@ void he_sprites_draw(void)
                 HERect rect = prv->screenRect;
                 HEBitmap *bitmap = prv->tileBitmap;
                 
-                HERect innerRect = rect_intersection(clipRect, rect);
+                HERect innerRect = he_rect_intersection(clipRect, rect);
                 
                 he_graphics_pushContext();
                 he_graphics_setClipRect(innerRect.x, innerRect.y, innerRect.width, innerRect.height);
@@ -1872,10 +1872,10 @@ void he_sprites_draw(void)
 
 void he_sprites_resizeGrid(float x, float y, float width, float height, float cellSize)
 {
-    HERectF rect = rectf_new(x, y, width, height);
+    HERectF rect = he_rectf_new(x, y, width, height);
     
-    grid_resize(collisionsGrid, rect, cellSize);
-    grid_resize(visibilityGrid, rect, cellSize);
+    he_grid_resize(collisionsGrid, rect, cellSize);
+    he_grid_resize(visibilityGrid, rect, cellSize);
 }
 
 #if HE_LUA_BINDINGS
@@ -2249,7 +2249,7 @@ static int lua_spriteCheckCollisions(lua_State *L)
     
     int len;
     HESpriteCollision *collisions = HESprite_checkCollisions(sprite, &len);
-    HELuaArray *luaArray = lua_array_new(collisions, len, sizeof(HESpriteCollision), HELuaArrayItemCollision);
+    HELuaArray *luaArray = he_lua_array_new(collisions, len, sizeof(HESpriteCollision), HELuaArrayItemCollision);
     playdate->system->realloc(collisions, 0);
     
     playdate->lua->pushObject(luaArray, lua_kArray, 0);
@@ -2450,7 +2450,7 @@ static int lua_spritesDraw(lua_State *L)
 
 static int lua_spritesGetCollisions(lua_State *L)
 {
-    HELuaArray *luaArray = lua_array_new(spriteCollisions->items, spriteCollisions->length, sizeof(HESpriteCollision), HELuaArrayItemCollision);
+    HELuaArray *luaArray = he_lua_array_new(spriteCollisions->items, spriteCollisions->length, sizeof(HESpriteCollision), HELuaArrayItemCollision);
     playdate->lua->pushObject(luaArray, lua_kArray, 0);
     playdate->lua->pushInt(luaArray->length);
     return 2;
@@ -2476,7 +2476,7 @@ static int lua_spriteQueryWithRect(lua_State *L)
     
     int len;
     HESprite** sprites = he_sprites_queryWithRect(x, y, width, height, &len);
-    HELuaArray *luaArray = lua_array_new(sprites, len, sizeof(HESprite*), HELuaArrayItemSprite);
+    HELuaArray *luaArray = he_lua_array_new(sprites, len, sizeof(HESprite*), HELuaArrayItemSprite);
     playdate->system->realloc(sprites, 0);
     
     playdate->lua->pushObject(luaArray, lua_kArray, 0);
@@ -2494,7 +2494,7 @@ static int lua_spriteQueryWithSegment(lua_State *L)
     
     int len;
     HESprite** sprites = he_sprites_queryWithSegment(x1, y1, x2, y2, &len);
-    HELuaArray *luaArray = lua_array_new(sprites, len, sizeof(HESprite*), HELuaArrayItemSprite);
+    HELuaArray *luaArray = he_lua_array_new(sprites, len, sizeof(HESprite*), HELuaArrayItemSprite);
     playdate->system->realloc(sprites, 0);
     
     playdate->lua->pushObject(luaArray, lua_kArray, 0);
@@ -2510,7 +2510,7 @@ static int lua_spriteQueryWithPoint(lua_State *L)
     
     int len;
     HESprite** sprites = he_sprites_queryWithPoint(x, y, &len);
-    HELuaArray *luaArray = lua_array_new(sprites, len, sizeof(HESprite*), HELuaArrayItemSprite);
+    HELuaArray *luaArray = he_lua_array_new(sprites, len, sizeof(HESprite*), HELuaArrayItemSprite);
     playdate->system->realloc(sprites, 0);
     
     playdate->lua->pushObject(luaArray, lua_kArray, 0);
@@ -2551,16 +2551,16 @@ void he_sprite_init(PlaydateAPI *pd, int enableLua)
     playdate = pd;
     HESprite_clearScreenClipRect();
     
-    sprites = array_new();
-    visibleSprites = array_new();
-    movingSprites = array_new();
-    followSprites = array_new();
-    spriteCollisions = generic_array_new(sizeof(HESpriteCollision));
+    sprites = he_array_new();
+    visibleSprites = he_array_new();
+    movingSprites = he_array_new();
+    followSprites = he_array_new();
+    spriteCollisions = he_generic_array_new(sizeof(HESpriteCollision));
     
-    HERectF gridRect = rectf_new(0, 0, LCD_COLUMNS, LCD_ROWS);
+    HERectF gridRect = he_rectf_new(0, 0, LCD_COLUMNS, LCD_ROWS);
     
-    collisionsGrid = grid_new(gridRect, 64);
-    visibilityGrid = grid_new(gridRect, 64);
+    collisionsGrid = he_grid_new(gridRect, 64);
+    visibilityGrid = he_grid_new(gridRect, 64);
     
 #if HE_LUA_BINDINGS
     if(enableLua)
