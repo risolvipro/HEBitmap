@@ -54,8 +54,8 @@ def compress(data, rowbytes, bh):
             changed = True
 
             if last_byte == byte:
-                count += 1
                 if count < 255:
+                    count += 1
                     changed = False
 
             if changed:
