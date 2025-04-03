@@ -11,8 +11,7 @@
 #include "pd_api.h"
 #include "he_api.h"
  
-#define ENTITY_COUNT 1000
-// #define LUA_EXAMPLE
+#define ENTITY_COUNT 300
 
 typedef struct {
     float x;
@@ -23,7 +22,6 @@ typedef struct {
 
 static PlaydateAPI *playdate;
 
-#ifndef LUA_EXAMPLE
 static HEBitmap *he_bitmap;
 static LCDBitmap *lcd_bitmap;
 static int use_sdk = 0;
@@ -37,7 +35,6 @@ static PDMenuItem *debugMenuItem;
 
 static int update(void* userdata);
 static void debugMenuCallback(void *userdata);
-#endif
 
 #ifdef _WINDLL
 __declspec(dllexport)
@@ -50,10 +47,9 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
     {
         playdate = pd;
         
-#ifndef LUA_EXAMPLE
         playdate->display->setRefreshRate(0);
         
-        he_library_init(pd, 0);
+        he_library_init(pd);
         
         lcd_bitmap = playdate->graphics->loadBitmap("dvd", NULL);
         he_bitmap = HEBitmap_load("dvd");
@@ -75,13 +71,6 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg)
         
         // Note: If you set an update callback in the kEventInit handler, the system assumes the game is pure C and doesn't run any Lua code in the game
         pd->system->setUpdateCallback(update, pd);
-#endif
-    }
-    else if(event == kEventInitLua)
-    {
-#ifdef LUA_EXAMPLE
-        he_library_init(pd, 1);
-#endif
     }
     
     return 0;

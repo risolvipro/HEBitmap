@@ -9,8 +9,6 @@ HEBitmap (**H**igh **E**fficiency Bitmap) is a custom implementation of the draw
 
 This implementation is up to 2x faster than the SDK drawBitmap function, but native features (flip, stencil) are not supported.
 
-The library also provides an optional sprite system to efficiently move sprites and check collisions.
-
 ## Benchmark
 
 Bitmap info: 96x96 (masked)
@@ -25,8 +23,7 @@ Bitmap info: 96x96 (masked)
 #include "he_api.h"
 
 // Initialize with PlaydateAPI pointer
-// Pass 1 to enable Lua support
-he_library_init(pd, 0);
+he_library_init(pd);
 
 // Load HEBitmap from a Playdate image file
 HEBitmap *bitmap = HEBitmap_load("catbus");
@@ -42,36 +39,6 @@ HEBitmap_free(bitmap);
 
 [C API Documentation](https://risolvipro.github.io/HEBitmap/C-API.html)
 
-## Lua
-
-```c
-#include "he_api.h"
-
-// Initialize in kEventInitLua
-// Pass 1 to enable Lua support
-he_library_init(pd, 1);
-```
-
-```lua
-import "he/bitmap"
-
--- Load HEBitmap from a Playdate image file
-local bitmap = he.bitmap.new("catbus")
-
-function playdate.update()
-    -- Draw
-    bitmap:draw(100, 100)
-end
-```
-
-## Create a C-Lua project on macOS
-
-* Install CMake (run `brew install cmake` from the terminal)
-* In the *lua* folder of the repo you can find a minimal template to create a C-Lua project
-* Copy all the files beginning with "he_" from *src* into *lua/src*
-* Navigate into the *lua* folder and create a *build* folder
-* Open the terminal and navigate into it
-
 ### Simulator build
 * Run `cd <your_build_folder>`
 * Run `cmake  ..`
@@ -82,24 +49,6 @@ end
 * Run `cmake -DCMAKE_TOOLCHAIN_FILE=<path to SDK>/PlaydateSDK/C_API/buildsupport/arm.cmake -DCMAKE_BUILD_TYPE=Release ..`
 * Note: replace `<path to SDK>` with your SDK path
 * Run `make`
-
-You can now build and run it as a Lua project.
-
-## Lua Docs
-
-[Lua API Documentation](https://risolvipro.github.io/HEBitmap/Lua-API.html)
-
-## Sprite system
-
-The sprite system allows to efficiently move, check collisions and draw sprites. You can find two Lua examples in the repo.
-
-*Source/dino*
-
-<img src="assets/dino.gif" alt="Dino demo">
-
-*Source/survival*
-
-<img src="assets/survival.gif" alt="Survival demo">
 
 ## Encoder
 

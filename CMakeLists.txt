@@ -30,7 +30,7 @@ set(PLAYDATE_GAME_DEVICE HEBitmap_DEVICE)
 
 project(${PLAYDATE_GAME_NAME} C ASM)
 
-set(LIB_FILES src/main.c src/he_api.c src/he_foundation.c src/he_prv.c src/he_bitmap.c src/he_sprite.c)
+set(LIB_FILES src/main.c src/he_api.c src/he_foundation.c src/he_prv.c src/he_bitmap.c)
 
 if (TOOLCHAIN STREQUAL "armgcc")
 	add_executable(${PLAYDATE_GAME_DEVICE} ${LIB_FILES})

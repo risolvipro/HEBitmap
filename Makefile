@@ -26,7 +26,6 @@ SRC += src/he_api.c
 SRC += src/he_prv.c
 SRC += src/he_foundation.c
 SRC += src/he_bitmap.c
-SRC += src/he_sprite.c
 
 # List all user directories here
 UINCDIR += src

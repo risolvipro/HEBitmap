@@ -37,7 +37,6 @@ HEBitmap* HEBitmap_base(void)
     
     prv->buffer = NULL;
     prv->isOwner = 0;
-    prv->bitmapTable = NULL;
     
     bitmap->width = 0;
     bitmap->height = 0;
@@ -49,11 +48,6 @@ HEBitmap* HEBitmap_base(void)
     
     prv->data = NULL;
     prv->mask = NULL;
-
-#if HE_LUA_BINDINGS
-    prv->luaObject = he_lua_object_new();
-    prv->luaTableRef = NULL;
-#endif
     
     return bitmap;
 }
@@ -171,7 +165,7 @@ HEBitmap* HEBitmap_loadHEB(const char *filename)
 
 static void decompress(uint8_t *dst, uint8_t **buffer, size_t len)
 {
-    uint32_t i = 0;
+    size_t i = 0;
     
     while(i < len)
     {
@@ -179,7 +173,10 @@ static void decompress(uint8_t *dst, uint8_t **buffer, size_t len)
         (*buffer)++;
         uint8_t data = **buffer;
         (*buffer)++;
-        uint32_t end = i + count;
+        size_t end = i + count;
+        if(end > len){
+            end = len;
+        }
         while(i < end)
         {
             dst[i++] = data;
@@ -350,13 +347,6 @@ void HEBitmap_free(HEBitmap *bitmap)
     
     if(!prv->isOwner)
     {
-#if HE_LUA_BINDINGS
-        if(prv->bitmapTable)
-        {
-            _HEBitmapTable *_bitmapTable = prv->bitmapTable->prv;
-            he_gc_remove(&_bitmapTable->luaObject);
-        }
-#endif
         return;
     }
     
@@ -376,9 +366,6 @@ HEBitmapTable* HEBitmapTable_base(void)
     prv->buffer = NULL;
     prv->bitmaps = NULL;
     
-#if HE_LUA_BINDINGS
-    prv->luaObject = he_lua_object_new();
-#endif
     return bitmapTable;
 }
 
@@ -418,8 +405,6 @@ HEBitmapTable* HEBitmapTable_fromLCDBitmapTable(LCDBitmapTable *lcd_bitmapTable)
         HEBitmap *bitmap = _HEBitmap_fromLCDBitmap(lcd_bitmap, 0);
         if(bitmap)
         {
-            _HEBitmap *_bitmap = bitmap->prv;
-            _bitmap->bitmapTable = bitmapTable;
             prv->bitmaps[i] = bitmap;
         }
         else
@@ -493,9 +478,6 @@ HEBitmapTable* HEBitmapTable_loadHEBT(const char *filename)
     {
         uint32_t bitmap_size = read_uint32(&buffer_ptr);
         HEBitmap *bitmap = HEBitmap_fromBuffer(buffer_ptr, 0);
-        _HEBitmap *_bitmap = bitmap->prv;
-        _bitmap->bitmapTable = bitmapTable;
-        
         prv->bitmaps[i] = bitmap;
         
         buffer_ptr += bitmap_size;
@@ -521,18 +503,6 @@ HEBitmap* HEBitmap_atIndex(HEBitmapTable *bitmapTable, unsigned int index)
     if(index < bitmapTable->length)
     {
         HEBitmap *bitmap = prv->bitmaps[index];
-#if HE_LUA_BINDINGS
-        _HEBitmap *_bitmap = bitmap->prv;
-        // check if table is a Lua object
-        if(prv->luaObject.ref)
-        {
-            if(!_bitmap->luaTableRef)
-            {
-                _bitmap->luaTableRef = prv->luaObject.ref;
-                he_gc_add(&prv->luaObject);
-            }
-        }
-#endif
         return bitmap;
     }
     
@@ -663,187 +633,7 @@ static void get_bounds(uint8_t *mask, int rowbytes, int width, int height, int *
     *bx = min_x; *by = min_y; *bw = max_x - min_x; *bh = max_y - min_y;
 }
 
-#if HE_LUA_BINDINGS
-//
-// Lua bindings
-//
-static int lua_bitmapNew(lua_State *L)
-{
-    const char *filename = playdate->lua->getArgString(1);
-    HEBitmap *bitmap = HEBitmap_load(filename);
-    if(bitmap)
-    {
-        _HEBitmap *prv = bitmap->prv;
-        LuaUDObject *luaRef = playdate->lua->pushObject(bitmap, lua_kBitmap, 0);
-        prv->luaObject.ref = luaRef;
-    }
-    else
-    {
-        playdate->lua->pushNil();
-    }
-    return 1;
-}
-
-static int lua_bitmapLoadHEB(lua_State *L)
-{
-    const char *filename = playdate->lua->getArgString(1);
-    HEBitmap *bitmap = HEBitmap_loadHEB(filename);
-    if(bitmap)
-    {
-        _HEBitmap *prv = bitmap->prv;
-        LuaUDObject *luaRef = playdate->lua->pushObject(bitmap, lua_kBitmap, 0);
-        prv->luaObject.ref = luaRef;
-    }
-    else
-    {
-        playdate->lua->pushNil();
-    }
-    return 1;
-}
-
-static int lua_bitmapGetSize(lua_State *L)
-{
-    HEBitmap *bitmap = playdate->lua->getArgObject(1, lua_kBitmap, NULL);
-    playdate->lua->pushInt(bitmap->width);
-    playdate->lua->pushInt(bitmap->height);
-    return 2;
-}
-
-static int lua_bitmapColorAt(lua_State *L)
-{
-    HEBitmap *bitmap = playdate->lua->getArgObject(1, lua_kBitmap, NULL);
-    int x = playdate->lua->getArgFloat(2);
-    int y = playdate->lua->getArgFloat(3);
-    LCDColor color = HEBitmap_colorAt(bitmap, x, y);
-    int lua_color;
-    switch(color)
-    {
-        case kColorBlack:
-            lua_color = 1;
-            break;
-        case kColorWhite:
-            lua_color = 2;
-            break;
-        default:
-            lua_color = 3;
-            break;
-    }
-    playdate->lua->pushInt(lua_color);
-    return 1;
-}
-
-static int lua_bitmapDraw(lua_State *L)
-{
-    HEBitmap *bitmap = playdate->lua->getArgObject(1, lua_kBitmap, NULL);
-    int x = playdate->lua->getArgFloat(2);
-    int y = playdate->lua->getArgFloat(3);
-    HEBitmap_draw(bitmap, x, y);
-    return 0;
-}
-
-static int lua_bitmapFree(lua_State *L)
-{
-    HEBitmap *bitmap = playdate->lua->getArgObject(1, lua_kBitmap, NULL);
-    HEBitmap_free(bitmap);
-    return 0;
-}
-
-static const lua_reg lua_bitmap[] = {
-    { "new", lua_bitmapNew },
-    { "loadHEB", lua_bitmapLoadHEB },
-    { "getSize", lua_bitmapGetSize },
-    { "_colorAt", lua_bitmapColorAt },
-    { "draw", lua_bitmapDraw },
-    { "__gc", lua_bitmapFree },
-    { NULL, NULL }
-};
-
-static int lua_bitmapTableNew(lua_State *L)
-{
-    const char *filename = playdate->lua->getArgString(1);
-    HEBitmapTable *bitmapTable = HEBitmapTable_load(filename);
-    if(bitmapTable)
-    {
-        _HEBitmapTable *prv = bitmapTable->prv;
-        LuaUDObject *luaRef = playdate->lua->pushObject(bitmapTable, lua_kBitmapTable, 0);
-        prv->luaObject.ref = luaRef;
-    }
-    else
-    {
-        playdate->lua->pushNil();
-    }
-    return 1;
-}
-
-static int lua_bitmapTableLoadHEBT(lua_State *L)
-{
-    const char *filename = playdate->lua->getArgString(1);
-    HEBitmapTable *bitmapTable = HEBitmapTable_loadHEBT(filename);
-    if(bitmapTable)
-    {
-        _HEBitmapTable *prv = bitmapTable->prv;
-        LuaUDObject *luaRef = playdate->lua->pushObject(bitmapTable, lua_kBitmapTable, 0);
-        prv->luaObject.ref = luaRef;
-    }
-    else
-    {
-        playdate->lua->pushNil();
-    }
-    return 1;
-}
-
-static int lua_bitmapAtIndex(lua_State *L)
-{
-    HEBitmapTable *bitmapTable = playdate->lua->getArgObject(1, lua_kBitmapTable, NULL);
-    int index = playdate->lua->getArgFloat(2);
-    
-    HEBitmap *bitmap = HEBitmapAtIndex_1(bitmapTable, index);
-    if(bitmap)
-    {
-        _HEBitmap *_bitmap = bitmap->prv;
-        LuaUDObject *luaRef = playdate->lua->pushObject(bitmap, lua_kBitmap, 0);
-        _bitmap->luaObject.ref = luaRef;
-    }
-    else
-    {
-        playdate->lua->pushNil();
-    }
-    return 1;
-}
-
-static int lua_bitmapTableLength(lua_State *L)
-{
-    HEBitmapTable *bitmapTable = playdate->lua->getArgObject(1, lua_kBitmapTable, NULL);
-    playdate->lua->pushInt(bitmapTable->length);
-    return 1;
-}
-
-static int lua_bitmapTableFree(lua_State *L)
-{
-    HEBitmapTable *bitmapTable = playdate->lua->getArgObject(1, lua_kBitmapTable, NULL);
-    HEBitmapTable_free(bitmapTable);
-    return 0;
-}
-
-static const lua_reg lua_bitmapTable[] = {
-    { "new", lua_bitmapTableNew },
-    { "loadHEBT", lua_bitmapTableLoadHEBT },
-    { "getBitmap", lua_bitmapAtIndex },
-    { "getLength", lua_bitmapTableLength },
-    { "__gc", lua_bitmapTableFree },
-    { NULL, NULL }
-};
-#endif
-
-void he_bitmap_init(PlaydateAPI *pd, int enableLua)
+void he_bitmap_init(PlaydateAPI *pd)
 {
     playdate = pd;
-    
-#if HE_LUA_BINDINGS
-    if(enableLua)
-    {
-        playdate->lua->registerClass(lua_kBitmap, lua_bitmap, NULL, 0, NULL);
-        playdate->lua->registerClass(lua_kBitmapTable, lua_bitmapTable, NULL, 0, NULL);
-    }
-#endif
 }

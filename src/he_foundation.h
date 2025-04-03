@@ -9,22 +9,13 @@
 #define he_foundation_h
 
 typedef struct {
-    float x;
-    float y;
-} HEVec2;
-
-typedef struct {
     int x;
     int y;
     int width;
     int height;
 } HERect;
 
-typedef struct {
-    float x;
-    float y;
-    float width;
-    float height;
-} HERectF;
+HERect he_rect_new(int x, int y, int width, int height);
+HERect he_rect_zero(void);
 
 #endif /* he_foundation_h */
