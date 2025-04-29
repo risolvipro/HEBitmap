@@ -16,7 +16,7 @@
 
 static PlaydateAPI *playdate;
 
-static HEBitmap* HEBitmap_fromBuffer(uint8_t *buffer, int isOwner);
+static HEBitmap* HEBitmap_fromBuffer(uint8_t *buffer, int isOwner, int *retainBuffer);
 
 static void get_bounds(uint8_t *mask, int rowbytes, int width, int height, int *bx, int *by, int *bw, int *bh);
 static void allocation_failed(void);
@@ -160,7 +160,13 @@ HEBitmap* HEBitmap_loadHEB(const char *filename)
         return NULL;
     }
     
-    return HEBitmap_fromBuffer(buffer, 1);
+    int retainBuffer;
+    HEBitmap *bitmap = HEBitmap_fromBuffer(buffer, 1, &retainBuffer);
+    if(!retainBuffer)
+    {
+        playdate->system->realloc(buffer, 0);
+    }
+    return bitmap;
 }
 
 static void decompress(uint8_t *dst, uint8_t **buffer, size_t len)
@@ -184,7 +190,7 @@ static void decompress(uint8_t *dst, uint8_t **buffer, size_t len)
     }
 }
 
-static HEBitmap* HEBitmap_fromBuffer(uint8_t *buffer, int isOwner)
+static HEBitmap* HEBitmap_fromBuffer(uint8_t *buffer, int isOwner, int *retainBuffer)
 {
     HEBitmap *bitmap = HEBitmap_base();
     _HEBitmap *prv = bitmap->prv;
@@ -235,10 +241,7 @@ static HEBitmap* HEBitmap_fromBuffer(uint8_t *buffer, int isOwner)
             decompress(prv->mask, &buffer_ptr, data_size);
         }
         
-        if(isOwner)
-        {
-            playdate->system->realloc(buffer, 0);
-        }
+        *retainBuffer = 0;
     }
     else
     {
@@ -251,6 +254,8 @@ static HEBitmap* HEBitmap_fromBuffer(uint8_t *buffer, int isOwner)
             buffer_ptr += prv->rowbytes * prv->bh;
             prv->mask = buffer_ptr;
         }
+        
+        *retainBuffer = 1;
     }
     
     return bitmap;
@@ -474,16 +479,23 @@ HEBitmapTable* HEBitmapTable_loadHEBT(const char *filename)
         buffer_ptr += padding_len;
     }
     
-    for(unsigned int i = 0; i < length; i++)
+    int retainBufferTable = 0;
+    
+    for(uint32_t i = 0; i < length; i++)
     {
         uint32_t bitmap_size = read_uint32(&buffer_ptr);
-        HEBitmap *bitmap = HEBitmap_fromBuffer(buffer_ptr, 0);
+        
+        int retainBufferBitmap;
+        HEBitmap *bitmap = HEBitmap_fromBuffer(buffer_ptr, 0, &retainBufferBitmap);
         prv->bitmaps[i] = bitmap;
         
+        if(retainBufferBitmap){
+            retainBufferTable = 1;
+        }
         buffer_ptr += bitmap_size;
     }
     
-    if(compressed)
+    if(retainBufferTable)
     {
         prv->buffer = buffer;
     }
