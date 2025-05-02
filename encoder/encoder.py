@@ -4,7 +4,7 @@ from PIL import Image
 from PIL import ImageSequence
 import re
 
-format_version = 3
+format_version = 4
 
 # arguments
 
@@ -36,7 +36,6 @@ def add_padding(data):
         data.extend((0).to_bytes(1, byteorder="big"))
         
 def compress(data, rowbytes, bh):
-    
     output = bytearray()
     
     last_byte = 0b00000000
@@ -145,7 +144,6 @@ def encode_image(im):
         add_padding(output)
 
     if format_version >= 3 and compressed:
-        
         data = compress(data, rowbytes, bh)
         if has_mask:
             mask = compress(mask, rowbytes, bh)
@@ -158,36 +156,39 @@ def encode_image(im):
         if has_mask:
             output.extend(mask)
 
-    return output
+    bufferLen = rowbytes * bh
+    if has_mask:
+        bufferLen += rowbytes * bh
 
-def save_table(name, length, imagesData):
+    return (output, bufferLen)
+
+def save_table(name, tableImages):
     data = bytearray()
 
     data.extend(format_version.to_bytes(4, byteorder="big"))
-    data.extend(length.to_bytes(4, byteorder="big"))
+    data.extend(len(tableImages).to_bytes(4, byteorder="big"))
 
     if format_version >= 3:
         compressed_int = 1 if compressed else 0
         data.extend(compressed_int.to_bytes(1, byteorder="big"))
 
+        if format_version >= 4 and compressed:
+            bufferLen = 0
+            for tableImage in tableImages:
+                bufferLen += tableImage[1]
+            data.extend(bufferLen.to_bytes(4, byteorder="big"))
+
     if format_version >= 2:
         add_padding(data)
 
-    data.extend(imagesData)
+    for tableImage in tableImages:
+        data.extend(len(tableImage[0]).to_bytes(4, byteorder="big"))
+        data.extend(tableImage[0])
 
     result_filename = name + ".hebt"
     f = open(os.path.join(output_dir, result_filename), "wb")
     f.write(data)
     f.close()
-    
-def encode_table_image(im):
-    imageData = encode_image(im)
-
-    data = bytearray()
-    data.extend(len(imageData).to_bytes(4, byteorder="big"))
-    data.extend(imageData)
-
-    return data
 
 input_file = os.path.join(working_dir, input_filename)
 if os.path.isabs(input_filename):
@@ -201,15 +202,13 @@ if os.path.isfile(input_file):
     im = Image.open(input_file)
     
     if im.format == "GIF" and im.is_animated:
-        length = 0
-        imagesData = bytearray()
+        tableImages = []
         for frame in ImageSequence.Iterator(im):
-            imagesData.extend(encode_table_image(frame))
-            length += 1
+            tableImages.append(encode_image(frame))
         
-        save_table(filename_no_ext, length, imagesData)
+        save_table(filename_no_ext, tableImages)
     else:
-        imageData = encode_image(im)
+        (imageData, bufferLen) = encode_image(im)
         result_filename = filename_no_ext + ".heb"
 
         f = open(os.path.join(output_dir, result_filename), "wb")
@@ -234,10 +233,10 @@ elif os.path.isdir(input_file):
     if len(tableFiles) > 0:
         tableName = tableFiles[0][1]
 
-        imagesData = bytearray()
+        tableImages = []
         for tableFile in tableFiles:
             filename = tableFile[2]
             im = Image.open(filename)
-            imagesData.extend(encode_table_image(im))
+            tableImages.append(encode_image(im))
         
-        save_table(tableName, len(tableFiles), imagesData)
+        save_table(tableName, tableImages)

@@ -12,24 +12,6 @@
 #include "he_foundation.h"
 
 typedef struct {
-    uint8_t *data;
-    uint8_t *mask;
-    int rowbytes;
-    int bx;
-    int by;
-    int bw;
-    int bh;
-    uint8_t *buffer;
-    int isOwner;
-    int freeData;
-} _HEBitmap;
-
-typedef struct {
-    HEBitmap **bitmaps;
-    uint8_t *buffer;
-} _HEBitmapTable;
-
-typedef struct {
     HERect _clipRect;
     HERect clipRect;
 } HEGraphicsContext;

@@ -8,7 +8,7 @@
 #ifndef he_foundation_h
 #define he_foundation_h
 
-typedef struct {
+typedef struct HERect {
     int x;
     int y;
     int width;

@@ -54,8 +54,6 @@ HERect he_rect_intersection(HERect clipRect, HERect rect)
 //
 void he_bitmap_clip_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, unsigned int *y1, unsigned int *x2, unsigned int *y2, unsigned int *offset_left, unsigned int *offset_top, HERect clipRect)
 {
-    _HEBitmap *prv = bitmap->prv;
-    
     *x1 = x;
     *offset_left = 0;
 
@@ -74,12 +72,12 @@ void he_bitmap_clip_bounds(HEBitmap *bitmap, int x, int y, unsigned int *x1, uns
         *offset_top = clipRect.y - y;
     }
     
-    int bitmap_x2 = x + prv->bw;
-    int bitmap_y2 = y + prv->bh;
+    int bitmap_x2 = x + bitmap->prv.bw;
+    int bitmap_y2 = y + bitmap->prv.bh;
     
     int clip_x2 = clipRect.x + clipRect.width;
     int clip_y2 = clipRect.y + clipRect.height;
-
+    
     *x2 = he_min(bitmap_x2, clip_x2);
     *y2 = he_min(bitmap_y2, clip_y2);
 }

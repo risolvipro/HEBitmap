@@ -48,7 +48,8 @@ void he_graphics_clearClipRect(void)
     he_graphics_context->clipRect = he_graphics_context->_clipRect;
 }
 
-HERect he_graphics_getClipRect(void){
+HERect he_graphics_getClipRect(void)
+{
     return he_graphics_context->_clipRect;
 }
 

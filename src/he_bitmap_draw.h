@@ -15,7 +15,7 @@ void HEBitmap_drawMask(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
 void HEBitmap_drawOpaque(PlaydateAPI *playdate, HEBitmap *bitmap, int x, int y)
 #endif
 {
-    _HEBitmap *prv = bitmap->prv;
+    _HEBitmap *prv = &bitmap->prv;
     
     x += prv->bx;
     y += prv->by;
