@@ -638,7 +638,7 @@ static uint8_t read_uint8(uint8_t **buffer_ptr)
 static uint32_t read_uint32(uint8_t **buffer_ptr)
 {
     uint8_t *buffer = *buffer_ptr;
-    uint32_t value = buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3];
+    uint32_t value = (uint32_t)buffer[0] << 24 | (uint32_t)buffer[1] << 16 | (uint32_t)buffer[2] << 8 | (uint32_t)buffer[3];
     *buffer_ptr += 4;
     return value;
 }

@@ -14,7 +14,7 @@ parser.add_argument('-r', "--raw", help="Save the file as raw data (no compressi
 
 args = parser.parse_args()
 
-input_filename = args.input
+input_arg = args.input
 compressed = not args.raw
 
 working_dir = os.getcwd()
@@ -190,10 +190,10 @@ def save_table(name, tableImages):
     f.write(data)
     f.close()
 
-input_file = os.path.join(working_dir, input_filename)
-if os.path.isabs(input_filename):
-    input_file = input_filename
-    output_dir = os.path.dirname(input_filename)
+input_file = os.path.join(working_dir, input_arg)
+if os.path.isabs(input_arg):
+    input_file = input_arg
+    output_dir = os.path.dirname(input_arg)
 
 if os.path.isfile(input_file):
     filename = os.path.basename(input_file)
