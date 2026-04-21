@@ -90,9 +90,12 @@ HEBitmap* _HEBitmap_fromLCDBitmap(LCDBitmap *lcd_bitmap, int isOwner, _HEBitmapA
     
     int rowbytes_aligned = ((bw + 31) / 32) * 4;
     size_t data_size = rowbytes_aligned * bh;
+    if(data_size == 0)
+    {
+        data_size = 1;
+    }
     
     uint8_t *data = playdate->system->realloc(NULL, data_size);
-    
     if(!data)
     {
         allocation_failed();
