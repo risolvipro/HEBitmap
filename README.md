@@ -63,3 +63,7 @@ You can use the Python encoder to create heb/hebt files, supported inputs are:
 
 ### Usage
 `python encoder.py -i <file_or_folder>`
+
+### AI Disclosure
+
+AI was not used to develop this library.
